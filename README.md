@@ -37,17 +37,35 @@ Se verificó la existencia del controlador `StatusController.java`, responsable 
 ![Estructura del proyecto](src/img/img4.png)
 
 ---
+## Evidencia 5: Endpoint /api/students funcionando
 
-# Conclusiones
+Se verificó el correcto funcionamiento del endpoint encargado de mostrar la lista de estudiantes registrados en memoria. La respuesta se obtuvo en formato JSON, permitiendo visualizar la información almacenada por la aplicación.
 
-- Se logró instalar y configurar correctamente el entorno de desarrollo para trabajar con Spring Boot utilizando Java 17 y Gradle.
-- Se comprendió la estructura básica de un proyecto Spring Boot y la función de sus principales componentes.
-- Se implementó satisfactoriamente un controlador REST utilizando las anotaciones `@RestController` y `@GetMapping`.
-- Se verificó el funcionamiento del servidor embebido Tomcat, permitiendo acceder a los servicios web sin necesidad de instalar servidores externos.
-- La práctica permitió entender cómo Spring Boot simplifica el desarrollo de aplicaciones backend mediante la auto-configuración y la integración de herramientas modernas para el desarrollo web.
+Endpoint utilizado:
+
+http://localhost:8080/api/students
+
 
 ---
 
-# Reflexión Personal
+## Evidencia 6: Endpoint /api/students/count funcionando
 
-Esta práctica permitió familiarizarse con el ecosistema Spring Boot y comprender la forma en que se construyen aplicaciones web modernas utilizando Java. Además, se observó la facilidad con la que Spring Boot gestiona la configuración inicial del proyecto, permitiendo al desarrollador concentrarse en la lógica de negocio y en la creación de servicios. La implementación del endpoint de prueba ayudó a comprender el flujo básico de una petición HTTP y la generación de respuestas en formato JSON.
+Se comprobó el funcionamiento del endpoint encargado de devolver la cantidad total de estudiantes registrados en memoria. La respuesta fue obtenida correctamente en formato JSON.
+
+Endpoint utilizado:
+
+http://localhost:8080/api/students/count
+
+
+---
+
+## Conclusiones
+Se logró instalar y configurar correctamente el entorno de desarrollo para trabajar con Spring Boot utilizando Java 17 y Gradle.
+Se comprendió la estructura básica de un proyecto Spring Boot y la función de sus principales componentes.
+Se implementaron satisfactoriamente varios controladores REST utilizando las anotaciones @RestController y @GetMapping.
+Se verificó el funcionamiento del servidor embebido Tomcat, permitiendo acceder a los servicios web sin necesidad de instalar servidores externos.
+Se desarrollaron endpoints para consultar información específica, como el estado del sistema y la gestión de estudiantes almacenados en memoria.
+La práctica permitió entender cómo Spring Boot simplifica el desarrollo de aplicaciones backend mediante la auto-configuración y la integración de herramientas modernas para el desarrollo web.
+Reflexión Personal
+
+Esta práctica permitió familiarizarse con el ecosistema Spring Boot y comprender la forma en que se construyen aplicaciones web modernas utilizando Java. Además, se observó la facilidad con la que Spring Boot gestiona la configuración inicial del proyecto, permitiendo al desarrollador concentrarse en la lógica de negocio y en la creación de servicios. La implementación de los diferentes endpoints ayudó a comprender el flujo de una petición HTTP, el manejo de datos en memoria y la generación de respuestas en formato JSON. Asimismo, se fortalecieron los conocimientos relacionados con la construcción de APIs REST y la organización de aplicaciones backend utilizando buenas prácticas de desarrollo.
