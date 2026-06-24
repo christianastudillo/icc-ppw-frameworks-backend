@@ -1,4 +1,3 @@
-
 server:
     port: 8080
     servlet:
@@ -7,4 +6,14 @@ server:
 spring:
     application:
         name: fundamentos01
-        
+    datasource:
+        url: jdbc:postgresql://localhost:5432/devdb
+        username: ups
+        password: ups123
+    jpa:
+        open-in-view: false
+        hibernate:
+            ddl-auto: update
+        properties:
+            hibernate:
+                format_sql: true

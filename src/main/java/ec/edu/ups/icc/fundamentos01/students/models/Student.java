@@ -1,17 +1,16 @@
 package ec.edu.ups.icc.fundamentos01.students.models;
 
 public class Student {
-
     private Long id;
-    private String name;    
+    private String name;
     private int age;
-    public Student() {
-    }
+    
     public Student(Long id, String name, int age) {
         this.id = id;
         this.name = name;
         this.age = age;
     }
+
     public Long getId() {
         return id;
     }
@@ -30,9 +29,5 @@ public class Student {
     public void setAge(int age) {
         this.age = age;
     }
-
-
-}   
-
-
-
+    
+}
