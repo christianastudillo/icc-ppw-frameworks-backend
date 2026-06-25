@@ -1,41 +1,50 @@
 package ec.edu.ups.icc.fundamentos01.products.dtos;
 
+
+import jakarta.validation.constraints.*;
+
+
+
 public class PartialUpdateProductDto {
+
+
+    @Size(min=3,max=150)
     private String name;
+
+
+
+    @PositiveOrZero
     private Double price;
+
+
+
+    @PositiveOrZero
     private Integer stock;
 
-    public PartialUpdateProductDto() {
-    }
 
-    public PartialUpdateProductDto(String name, Double price, Integer stock) {
-        this.name = name;
-        this.price = price;
-        this.stock = stock;
-    }
 
-    public String getName() {
+
+    public String getName(){
+
         return name;
+
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
 
-    public Double getPrice() {
+
+    public Double getPrice(){
+
         return price;
+
     }
 
-    public void setPrice(Double price) {
-        this.price = price;
-    }
 
-    public Integer getStock() {
+
+    public Integer getStock(){
+
         return stock;
+
     }
 
-    public void setStock(Integer stock) {
-        this.stock = stock;
-    }
 
 }
