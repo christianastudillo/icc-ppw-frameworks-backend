@@ -7,7 +7,7 @@ spring:
     application:
         name: fundamentos01
     datasource:
-        url: jdbc:postgresql://localhost:5433/devdb
+        url: jdbc:postgresql://localhost:5432/devdb
         username: ups
         password: ups123
     jpa:
