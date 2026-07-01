@@ -1,403 +1,137 @@
 package ec.edu.ups.icc.fundamentos01.products.services;
 
-
 import java.util.List;
 
-
 import org.springframework.stereotype.Service;
-
 
 import ec.edu.ups.icc.fundamentos01.products.dtos.CreateProductDto;
 import ec.edu.ups.icc.fundamentos01.products.dtos.PartialUpdateProductDto;
 import ec.edu.ups.icc.fundamentos01.products.dtos.ProductResponseDto;
 import ec.edu.ups.icc.fundamentos01.products.dtos.UpdateProductDto;
-
-import ec.edu.ups.icc.fundamentos01.products.entity.ProductEntity;
-
-import ec.edu.ups.icc.fundamentos01.products.mapper.ProductMapper;
-
+import ec.edu.ups.icc.fundamentos01.products.entities.ProductEntity;
 import ec.edu.ups.icc.fundamentos01.products.models.ProductModel;
-
 import ec.edu.ups.icc.fundamentos01.products.repositories.ProductRepository;
-
-
 
 @Service
 public class ProductServiceImpl implements ProductService {
 
-
     private final ProductRepository productRepository;
 
-
-
     public ProductServiceImpl(ProductRepository productRepository) {
-
         this.productRepository = productRepository;
-
     }
 
-
-
-
-
     /*
-     * Retorna todos los productos activos.
+     * Retorna todos los productos no eliminados almacenados en PostgreSQL.
      *
-     * Los productos eliminados lógicamente
-     * no deben aparecer en la respuesta.
+     * Filtra los productos con deleted = true para no exponerlos al cliente.
      */
     @Override
     public List<ProductResponseDto> findAll() {
-
-
-        return productRepository.findByDeletedFalse()
-
+        return productRepository.findAll()
                 .stream()
-
-                .map(ProductMapper::toModelFromEntity)
-
-                .map(ProductMapper::toResponse)
-
+                .filter(entity -> !entity.isDeleted())
+                .map(ProductModel::fromEntity)
+                .map(ProductModel::toResponseDto)
                 .toList();
-
-
     }
-
-
-
-
-
-
 
     /*
      * Busca un producto por id.
      *
-     * No permite devolver productos eliminados.
+     * Lanza excepción si no existe o si fue eliminado lógicamente.
      */
     @Override
     public ProductResponseDto findOne(Long id) {
-
-
-
         ProductEntity entity = productRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("Product not found"));
 
-                .orElseThrow(() ->
-                        new IllegalStateException("Product not found")
-                );
-
-
-
-        if(entity.getDeleted()){
-
-
-            throw new IllegalStateException(
-                    "Product deleted"
-            );
-
-
+        if (entity.isDeleted()) {
+            throw new IllegalStateException("Product not found");
         }
 
-
-
-        ProductModel model =
-                ProductMapper.toModelFromEntity(entity);
-
-
-
-        return ProductMapper.toResponse(model);
-
-
+        return ProductModel.fromEntity(entity).toResponseDto();
     }
 
-
-
-
-
-
-
-
     /*
-     * Crea un producto nuevo.
+     * Crea un nuevo producto y lo persiste en PostgreSQL.
      *
-     * DTO
-     * ↓
-     * Model
-     * ↓
-     * Entity
-     * ↓
-     * PostgreSQL
+     * Usa los factory methods del modelo de dominio en lugar del mapper.
      */
     @Override
     public ProductResponseDto create(CreateProductDto dto) {
-
-
-
-        ProductModel model =
-                ProductMapper.toModelFromDTO(dto);
-
-
-
-        ProductEntity entity =
-                ProductMapper.toEntityFromModel(model);
-
-
-
-        ProductEntity savedEntity =
-                productRepository.save(entity);
-
-
-
-        ProductModel savedModel =
-                ProductMapper.toModelFromEntity(savedEntity);
-
-
-
-        return ProductMapper.toResponse(savedModel);
-
-
+        ProductModel model = ProductModel.fromDto(dto);
+        ProductEntity entity = model.toEntity();
+        ProductEntity savedEntity = productRepository.save(entity);
+        return ProductModel.fromEntity(savedEntity).toResponseDto();
     }
 
-
-
-
-
-
-
-
     /*
-     * Actualiza completamente un producto.
+     * Actualiza completamente un producto existente (PUT).
      *
-     * No permite modificar productos eliminados.
+     * No actualiza productos eliminados lógicamente.
      */
     @Override
-    public ProductResponseDto update(
-            Long id,
-            UpdateProductDto dto
-    ) {
+    public ProductResponseDto update(Long id, UpdateProductDto dto) {
+        ProductEntity entity = productRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("Product not found"));
 
-
-
-        ProductEntity entity =
-                productRepository.findById(id)
-
-                .orElseThrow(() ->
-                        new IllegalStateException(
-                                "Product not found"
-                        )
-                );
-
-
-
-
-
-        if(entity.getDeleted()){
-
-
-            throw new IllegalStateException(
-                    "Cannot update deleted product"
-            );
-
-
+        if (entity.isDeleted()) {
+            throw new IllegalStateException("Cannot update a deleted product");
         }
 
+        ProductModel model = ProductModel.fromEntity(entity);
+        model.update(dto);
 
+        entity.setName(model.getName());
+        entity.setPrice(model.getPrice());
+        entity.setStock(model.getStock());
 
-
-
-        entity.setName(dto.getName());
-
-        entity.setPrice(dto.getPrice());
-
-        entity.setStock(dto.getStock());
-
-
-
-
-
-        ProductEntity savedEntity =
-                productRepository.save(entity);
-
-
-
-
-
-        ProductModel model =
-                ProductMapper.toModelFromEntity(savedEntity);
-
-
-
-
-        return ProductMapper.toResponse(model);
-
-
-
+        ProductEntity savedEntity = productRepository.save(entity);
+        return ProductModel.fromEntity(savedEntity).toResponseDto();
     }
 
-
-
-
-
-
-
-
-
     /*
-     * Actualización parcial.
+     * Actualiza parcialmente un producto existente (PATCH).
      *
-     * Solo modifica los campos enviados.
+     * No actualiza productos eliminados lógicamente.
      */
     @Override
-    public ProductResponseDto partialUpdate(
-            Long id,
-            PartialUpdateProductDto dto
-    ) {
+    public ProductResponseDto partialUpdate(Long id, PartialUpdateProductDto dto) {
+        ProductEntity entity = productRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("Product not found"));
 
-
-
-        ProductEntity entity =
-                productRepository.findById(id)
-
-                .orElseThrow(() ->
-                        new IllegalStateException(
-                                "Product not found"
-                        )
-                );
-
-
-
-
-
-        if(entity.getDeleted()){
-
-
-            throw new IllegalStateException(
-                    "Cannot update deleted product"
-            );
-
-
+        if (entity.isDeleted()) {
+            throw new IllegalStateException("Cannot update a deleted product");
         }
 
+        ProductModel model = ProductModel.fromEntity(entity);
+        model.partialUpdate(dto);
 
+        entity.setName(model.getName());
+        entity.setPrice(model.getPrice());
+        entity.setStock(model.getStock());
 
-
-
-        if(dto.getName()!=null){
-
-            entity.setName(
-                    dto.getName()
-            );
-
-        }
-
-
-
-
-
-        if(dto.getPrice()!=null){
-
-            entity.setPrice(
-                    dto.getPrice()
-            );
-
-        }
-
-
-
-
-
-        if(dto.getStock()!=null){
-
-            entity.setStock(
-                    dto.getStock()
-            );
-
-        }
-
-
-
-
-
-
-        ProductEntity savedEntity =
-                productRepository.save(entity);
-
-
-
-
-
-        ProductModel model =
-                ProductMapper.toModelFromEntity(savedEntity);
-
-
-
-
-        return ProductMapper.toResponse(model);
-
-
-
+        ProductEntity savedEntity = productRepository.save(entity);
+        return ProductModel.fromEntity(savedEntity).toResponseDto();
     }
 
-
-
-
-
-
-
-
-
     /*
-     * Eliminación lógica.
+     * Elimina lógicamente un producto marcando deleted = true.
      *
-     * No borra de PostgreSQL.
-     *
-     * Solo cambia:
-     *
-     * deleted = true
-     *
+     * No elimina físicamente el registro de la base de datos.
+     * Lanza excepción si el producto ya fue eliminado previamente.
      */
     @Override
     public void delete(Long id) {
+        ProductEntity entity = productRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("Product not found"));
 
-
-
-        ProductEntity entity =
-                productRepository.findById(id)
-
-                .orElseThrow(() ->
-                        new IllegalStateException(
-                                "Product not found"
-                        )
-                );
-
-
-
-
-
-        if(entity.getDeleted()){
-
-
-            throw new IllegalStateException(
-                    "Product already deleted"
-            );
-
-
+        if (entity.isDeleted()) {
+            throw new IllegalStateException("Product already deleted");
         }
 
-
-
-
-
         entity.setDeleted(true);
-
-
-
-
         productRepository.save(entity);
-
-
-
     }
-
-
-
 }
