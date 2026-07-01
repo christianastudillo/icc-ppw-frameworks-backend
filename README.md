@@ -369,6 +369,121 @@ Se comprobó:
 
 ------------------------------------------------------------------------
 
+# Práctica 8: Relaciones ManyToOne, Foreign Keys y Consultas Relacionales
+
+## Módulo categories
+
+Se agregó el módulo `categories` completo (entidad, DTOs, repositorio,
+servicio y controlador), siguiendo la misma arquitectura por capas que
+`users` y `products`.
+
+Endpoints:
+
+  Método   Ruta                     Descripción
+  -------- ------------------------ -----------------------------------
+  GET      /api/categories          Lista categorías activas
+  GET      /api/categories/{id}     Obtiene una categoría
+  POST     /api/categories          Crea una categoría
+  PUT      /api/categories/{id}     Actualiza una categoría
+  DELETE   /api/categories/{id}     Elimina lógicamente una categoría
+
+## Relaciones en ProductEntity
+
+``` java
+@ManyToOne(optional = false, fetch = FetchType.LAZY)
+@JoinColumn(name = "user_id", nullable = false)
+private UserEntity owner;
+
+@ManyToOne(optional = false, fetch = FetchType.LAZY)
+@JoinColumn(name = "category_id", nullable = false)
+private CategoryEntity category;
+```
+
+`ProductEntity` pasa de existir de forma aislada a depender de dos
+entidades padre: `UserEntity` (el usuario que registra el producto) y
+`CategoryEntity` (la categoría a la que pertenece). Cada `@ManyToOne`
+genera una clave foránea en `products` mediante `@JoinColumn` (`user_id`
+y `category_id`). `optional = false` impide guardar un producto sin
+esas relaciones, y `fetch = FetchType.LAZY` evita cargar el usuario y la
+categoría completos hasta que el código accede explícitamente a ellos
+(`entity.getOwner()...`), lo que evita consultas innecesarias en
+listados grandes.
+
+Como `open-in-view` está deshabilitado en `application.yml`, el acceso a
+`owner`/`category` (LAZY) solo funciona si ocurre dentro de la misma
+transacción que hizo la consulta. Por eso `ProductServiceImpl` se marcó
+con `@Transactional`: mantiene la sesión de Hibernate abierta mientras
+se arma el `ProductResponseDto` con los datos anidados.
+
+## Nuevos endpoints de productos
+
+  Método   Ruta                                  Descripción
+  -------- ------------------------------------- -----------------------------------
+  GET      /api/products/user/{userId}           Lista productos de un usuario
+  GET      /api/products/category/{categoryId}   Lista productos de una categoría
+
+## Validaciones agregadas en ProductServiceImpl
+
+-   Usuario inexistente o eliminado → `404 Not Found`
+-   Categoría inexistente o eliminada → `404 Not Found`
+-   Producto inexistente o eliminado → `404 Not Found`
+-   Nombre de producto duplicado → `409 Conflict`
+
+## Captura: estructura de la tabla products en PostgreSQL
+
+_(Pendiente: capturar `\d products` en `docker exec -it postgres-dev psql -U ups -d devdb`,
+mostrando las columnas `user_id` y `category_id` como llaves foráneas.)_
+
+## Captura: creación de producto con relaciones (Bruno/Postman)
+
+Petición:
+
+``` json
+POST /api/products
+{
+  "name": "Monitor Gamer",
+  "price": 350.0,
+  "stock": 8,
+  "userId": 4,
+  "categoryId": 2
+}
+```
+
+Respuesta verificada:
+
+``` json
+{
+  "id": 5,
+  "name": "Monitor Gamer",
+  "price": 350.0,
+  "stock": 8,
+  "owner": {
+    "id": 4,
+    "name": "Ana Prueba",
+    "email": "ana.prueba@ups.edu.ec"
+  },
+  "category": {
+    "id": 2,
+    "name": "Electronicos",
+    "description": "Dispositivos electronicos"
+  },
+  "createdAt": "2026-07-01T10:46:23.086061",
+  "updatedAt": null
+}
+```
+
+_(Pendiente: capturar esta misma respuesta desde Bruno/Postman.)_
+
+## Captura: consulta de productos por categoría
+
+``` text
+GET /api/products/category/2
+```
+
+_(Pendiente: capturar desde Bruno/Postman.)_
+
+------------------------------------------------------------------------
+
 # Conclusión
 
 Se desarrolló una API REST completa utilizando Spring Boot aplicando

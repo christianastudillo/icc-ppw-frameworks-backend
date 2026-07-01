@@ -1,0 +1,15 @@
+meta {
+  name: 02 - Get product by id
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/products/:id
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 1
+}

@@ -15,6 +15,8 @@ public class PartialUpdateProductDto {
     @Min(value = 0, message = "El stock no puede ser negativo")
     private Integer stock;
 
+    private Long categoryId;
+
     public PartialUpdateProductDto() {
     }
 
@@ -46,5 +48,13 @@ public class PartialUpdateProductDto {
 
     public void setStock(Integer stock) {
         this.stock = stock;
+    }
+
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId;
     }
 }

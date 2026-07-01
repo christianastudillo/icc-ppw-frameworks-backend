@@ -1,8 +1,13 @@
 package ec.edu.ups.icc.fundamentos01.products.entities;
 
+import ec.edu.ups.icc.fundamentos01.categories.entity.CategoryEntity;
 import ec.edu.ups.icc.fundamentos01.core.entities.BaseEntity;
+import ec.edu.ups.icc.fundamentos01.users.entities.UserEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @Entity
@@ -17,6 +22,26 @@ public class ProductEntity extends BaseEntity {
 
     @Column(nullable = false)
     private Integer stock;
+
+    /*
+     * Relación muchos a uno con UserEntity.
+     *
+     * Muchos productos pueden pertenecer a un usuario.
+     * La columna user_id se crea en la tabla products.
+     */
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserEntity owner;
+
+    /*
+     * Relación muchos a uno con CategoryEntity.
+     *
+     * Muchos productos pueden pertenecer a una categoría.
+     * La columna category_id se crea en la tabla products.
+     */
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
+    private CategoryEntity category;
 
     public ProductEntity() {
     }
@@ -49,5 +74,21 @@ public class ProductEntity extends BaseEntity {
 
     public void setStock(Integer stock) {
         this.stock = stock;
+    }
+
+    public UserEntity getOwner() {
+        return owner;
+    }
+
+    public void setOwner(UserEntity owner) {
+        this.owner = owner;
+    }
+
+    public CategoryEntity getCategory() {
+        return category;
+    }
+
+    public void setCategory(CategoryEntity category) {
+        this.category = category;
     }
 }

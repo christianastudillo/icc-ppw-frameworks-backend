@@ -2,11 +2,13 @@ package ec.edu.ups.icc.fundamentos01.products.models;
 
 import java.time.LocalDateTime;
 
+import ec.edu.ups.icc.fundamentos01.categories.dtos.CategoryResponseDto;
 import ec.edu.ups.icc.fundamentos01.products.dtos.CreateProductDto;
 import ec.edu.ups.icc.fundamentos01.products.dtos.PartialUpdateProductDto;
 import ec.edu.ups.icc.fundamentos01.products.dtos.ProductResponseDto;
 import ec.edu.ups.icc.fundamentos01.products.dtos.UpdateProductDto;
 import ec.edu.ups.icc.fundamentos01.products.entities.ProductEntity;
+import ec.edu.ups.icc.fundamentos01.users.dtos.UserResponseDto;
 
 public class ProductModel {
 
@@ -14,6 +16,10 @@ public class ProductModel {
     private String name;
     private Double price;
     private Integer stock;
+    private Long ownerId;
+    private Long categoryId;
+    private UserResponseDto owner;
+    private CategoryResponseDto category;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean deleted;
@@ -38,6 +44,8 @@ public class ProductModel {
         model.setName(dto.getName());
         model.setPrice(dto.getPrice());
         model.setStock(dto.getStock());
+        model.setOwnerId(dto.getUserId());
+        model.setCategoryId(dto.getCategoryId());
         return model;
     }
 
@@ -55,11 +63,27 @@ public class ProductModel {
         model.setCreatedAt(entity.getCreatedAt());
         model.setUpdatedAt(entity.getUpdatedAt());
         model.setDeleted(entity.isDeleted());
+
+        model.setOwnerId(entity.getOwner().getId());
+        model.setOwner(new UserResponseDto(
+                entity.getOwner().getId(),
+                entity.getOwner().getName(),
+                entity.getOwner().getEmail()));
+
+        model.setCategoryId(entity.getCategory().getId());
+        model.setCategory(new CategoryResponseDto(
+                entity.getCategory().getId(),
+                entity.getCategory().getName(),
+                entity.getCategory().getDescription()));
+
         return model;
     }
 
     /*
      * Convierte el ProductModel a ProductEntity para persistir en PostgreSQL.
+     *
+     * No asigna owner ni category: el servicio los obtiene desde sus
+     * repositorios (tras validar que existan) y los asigna sobre la entidad.
      */
     public ProductEntity toEntity() {
         ProductEntity entity = new ProductEntity();
@@ -71,8 +95,6 @@ public class ProductModel {
 
     /*
      * Convierte el ProductModel a ProductResponseDto para la respuesta al cliente.
-     *
-     * No expone createdAt ni campos internos.
      */
     public ProductResponseDto toResponseDto() {
         ProductResponseDto response = new ProductResponseDto();
@@ -80,6 +102,10 @@ public class ProductModel {
         response.setName(this.name);
         response.setPrice(this.price);
         response.setStock(this.stock);
+        response.setOwner(this.owner);
+        response.setCategory(this.category);
+        response.setCreatedAt(this.createdAt);
+        response.setUpdatedAt(this.updatedAt);
         return response;
     }
 
@@ -90,6 +116,7 @@ public class ProductModel {
         this.name = dto.getName();
         this.price = dto.getPrice();
         this.stock = dto.getStock();
+        this.categoryId = dto.getCategoryId();
     }
 
     /*
@@ -104,6 +131,9 @@ public class ProductModel {
         }
         if (dto.getStock() != null) {
             this.stock = dto.getStock();
+        }
+        if (dto.getCategoryId() != null) {
+            this.categoryId = dto.getCategoryId();
         }
     }
 
@@ -137,6 +167,38 @@ public class ProductModel {
 
     public void setStock(Integer stock) {
         this.stock = stock;
+    }
+
+    public Long getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(Long ownerId) {
+        this.ownerId = ownerId;
+    }
+
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId;
+    }
+
+    public UserResponseDto getOwner() {
+        return owner;
+    }
+
+    public void setOwner(UserResponseDto owner) {
+        this.owner = owner;
+    }
+
+    public CategoryResponseDto getCategory() {
+        return category;
+    }
+
+    public void setCategory(CategoryResponseDto category) {
+        this.category = category;
     }
 
     public LocalDateTime getCreatedAt() {

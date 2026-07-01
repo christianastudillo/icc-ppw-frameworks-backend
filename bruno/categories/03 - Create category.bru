@@ -1,0 +1,18 @@
+meta {
+  name: 03 - Create category
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/categories
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Electronics",
+    "description": "Electronic devices and gadgets"
+  }
+}

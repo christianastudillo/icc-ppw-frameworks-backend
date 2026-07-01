@@ -1,0 +1,21 @@
+meta {
+  name: 03 - Create product
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/products
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Laptop",
+    "price": 999.99,
+    "stock": 10,
+    "userId": 1,
+    "categoryId": 1
+  }
+}

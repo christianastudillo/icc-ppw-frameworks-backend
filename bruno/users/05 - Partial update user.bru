@@ -1,0 +1,21 @@
+meta {
+  name: 05 - Partial update user
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{baseUrl}}/users/:id
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 1
+}
+
+body:json {
+  {
+    "name": "John Doe Updated"
+  }
+}

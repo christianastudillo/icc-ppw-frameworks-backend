@@ -1,0 +1,24 @@
+meta {
+  name: 04 - Update product
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/products/:id
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 1
+}
+
+body:json {
+  {
+    "name": "Laptop Pro",
+    "price": 1199.99,
+    "stock": 5,
+    "categoryId": 1
+  }
+}

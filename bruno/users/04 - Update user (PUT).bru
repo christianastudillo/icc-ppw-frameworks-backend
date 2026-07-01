@@ -1,0 +1,22 @@
+meta {
+  name: 04 - Update user (PUT)
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/users/:id
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 1
+}
+
+body:json {
+  {
+    "name": "John Doe",
+    "email": "john.doe@example.com"
+  }
+}
