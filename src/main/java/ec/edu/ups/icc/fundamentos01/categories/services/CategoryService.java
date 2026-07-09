@@ -6,10 +6,6 @@ import ec.edu.ups.icc.fundamentos01.categories.dtos.CategoryResponseDto;
 import ec.edu.ups.icc.fundamentos01.categories.dtos.CreateCategoryDto;
 import ec.edu.ups.icc.fundamentos01.categories.dtos.UpdateCategoryDto;
 
-/*
- * Servicio que define las operaciones disponibles
- * para la gestión de categorías.
- */
 public interface CategoryService {
 
     List<CategoryResponseDto> findAll();

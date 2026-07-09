@@ -1,0 +1,21 @@
+meta {
+  name: CrearProducto
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8080/api/products
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "PC Gaming",
+    "price": 1200.0,
+    "stock": 5,
+    "userId": 4,
+    "categoryId": 3
+  }
+}

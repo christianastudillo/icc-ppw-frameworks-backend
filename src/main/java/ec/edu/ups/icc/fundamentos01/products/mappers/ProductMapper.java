@@ -1,15 +1,18 @@
 package ec.edu.ups.icc.fundamentos01.products.mappers;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import ec.edu.ups.icc.fundamentos01.categories.dtos.CategoryResponseDto;
+import ec.edu.ups.icc.fundamentos01.categories.entities.CategoryEntity;
 import ec.edu.ups.icc.fundamentos01.products.dtos.CreateProductDto;
 import ec.edu.ups.icc.fundamentos01.products.dtos.ProductResponseDto;
 import ec.edu.ups.icc.fundamentos01.products.entities.ProductEntity;
 import ec.edu.ups.icc.fundamentos01.products.models.ProductModel;
+import ec.edu.ups.icc.fundamentos01.users.dtos.UserResponseDto;
 
 public class ProductMapper {
 
-    /*
-     * Convierte un CreateProductDto en ProductModel.
-     */
     public static ProductModel toModelFromDTO(CreateProductDto dto) {
         ProductModel model = new ProductModel();
         model.setName(dto.getName());
@@ -18,28 +21,19 @@ public class ProductMapper {
         return model;
     }
 
-    /*
-     * Convierte una ProductEntity en ProductModel.
-     *
-     * Se usa cuando el repositorio devuelve datos desde PostgreSQL.
-     */
     public static ProductModel toModelFromEntity(ProductEntity entity) {
         ProductModel model = new ProductModel();
         model.setId(entity.getId());
         model.setName(entity.getName());
         model.setPrice(entity.getPrice());
         model.setStock(entity.getStock());
+        model.setCategories(entity.getCategories().stream().toList());
         model.setCreatedAt(entity.getCreatedAt());
         model.setUpdatedAt(entity.getUpdatedAt());
         model.setDeleted(entity.isDeleted());
         return model;
     }
 
-    /*
-     * Convierte un ProductModel en ProductEntity.
-     *
-     * Se usa antes de guardar datos en la base de datos.
-     */
     public static ProductEntity toEntityFromModel(ProductModel model) {
         ProductEntity entity = new ProductEntity();
         entity.setName(model.getName());
@@ -48,17 +42,50 @@ public class ProductMapper {
         return entity;
     }
 
-    /*
-     * Convierte un ProductModel en ProductResponseDto.
-     *
-     * No expone createdAt ni campos internos.
-     */
     public static ProductResponseDto toResponse(ProductModel model) {
         ProductResponseDto response = new ProductResponseDto();
         response.setId(model.getId());
         response.setName(model.getName());
         response.setPrice(model.getPrice());
         response.setStock(model.getStock());
+        response.setCategories(model.getCategories()
+                .stream()
+                .map(ProductMapper::toCategoryResponse)
+                .collect(Collectors.toSet()));
+        response.setCreatedAt(model.getCreatedAt());
+        response.setUpdatedAt(model.getUpdatedAt());
         return response;
+    }
+
+    public static ProductResponseDto toResponse(ProductEntity entity) {
+        ProductResponseDto response = new ProductResponseDto();
+        response.setId(entity.getId());
+        response.setName(entity.getName());
+        response.setPrice(entity.getPrice());
+        response.setStock(entity.getStock());
+        response.setCreatedAt(entity.getCreatedAt());
+        response.setUpdatedAt(entity.getUpdatedAt());
+
+        UserResponseDto ownerDto = new UserResponseDto();
+        ownerDto.setId(entity.getOwner().getId());
+        ownerDto.setName(entity.getOwner().getName());
+        ownerDto.setEmail(entity.getOwner().getEmail());
+        response.setOwner(ownerDto);
+
+        Set<CategoryResponseDto> categoryDtos = entity.getCategories()
+                .stream()
+                .map(ProductMapper::toCategoryResponse)
+                .collect(Collectors.toSet());
+        response.setCategories(categoryDtos);
+
+        return response;
+    }
+
+    private static CategoryResponseDto toCategoryResponse(CategoryEntity category) {
+        CategoryResponseDto categoryDto = new CategoryResponseDto();
+        categoryDto.setId(category.getId());
+        categoryDto.setName(category.getName());
+        categoryDto.setDescription(category.getDescription());
+        return categoryDto;
     }
 }

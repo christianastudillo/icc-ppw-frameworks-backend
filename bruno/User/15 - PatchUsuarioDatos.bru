@@ -1,0 +1,17 @@
+meta {
+  name: PatchUsuarioDatos
+  type: http
+  seq: 15
+}
+
+patch {
+  url: http://localhost:8080/api/users/4
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Marco Farfán"
+  }
+}

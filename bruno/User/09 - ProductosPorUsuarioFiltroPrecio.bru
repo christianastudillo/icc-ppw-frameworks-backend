@@ -1,0 +1,16 @@
+meta {
+  name: ProductosPorUsuarioFiltroPrecio
+  type: http
+  seq: 9
+}
+
+get {
+  url: http://localhost:8080/api/users/4/products?minPrice=500&maxPrice=1500
+  body: none
+  auth: none
+}
+
+params:query {
+  minPrice: 500
+  maxPrice: 1500
+}

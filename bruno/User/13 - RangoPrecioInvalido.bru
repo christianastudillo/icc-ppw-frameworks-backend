@@ -1,0 +1,16 @@
+meta {
+  name: RangoPrecioInvalido
+  type: http
+  seq: 13
+}
+
+get {
+  url: http://localhost:8080/api/users/4/products?minPrice=1500&maxPrice=500
+  body: none
+  auth: none
+}
+
+params:query {
+  minPrice: 1500
+  maxPrice: 500
+}

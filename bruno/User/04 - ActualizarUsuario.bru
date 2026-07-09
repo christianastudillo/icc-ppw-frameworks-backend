@@ -1,0 +1,18 @@
+meta {
+  name: ActualizarUsuario
+  type: http
+  seq: 4
+}
+
+put {
+  url: http://localhost:8080/api/users/{{bruUserId}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Marco Farfan",
+    "email": "marco.farfan.{{bruSuffix}}@gmail.com"
+  }
+}

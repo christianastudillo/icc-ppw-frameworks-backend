@@ -1,19 +1,14 @@
 package ec.edu.ups.icc.fundamentos01.products.dtos;
 
+import java.util.Set;
+
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-/*
- * DTO para recibir los datos al crear un producto.
- *
- * Solo contiene los campos que el cliente debe enviar.
- * - createdAt: el cliente puede enviarlo, pero el backend lo ignora.
- *   En el mapper se asigna con LocalDateTime.now() para evitar manipulación.
- *   Ejemplo en el mapper: model.setCreatedAt(LocalDateTime.now());
- */
 public class CreateProductDto {
 
     @NotBlank(message = "El nombre es obligatorio")
@@ -21,7 +16,7 @@ public class CreateProductDto {
     private String name;
 
     @NotNull(message = "El precio es obligatorio")
-    @DecimalMin(value = "0.0", message = "El precio no puede ser negativo")
+    @DecimalMin(value = "0.0", inclusive = true, message = "El precio no puede ser negativo")
     private Double price;
 
     @NotNull(message = "El stock es obligatorio")
@@ -31,16 +26,18 @@ public class CreateProductDto {
     @NotNull(message = "El ID del usuario es obligatorio")
     private Long userId;
 
-    @NotNull(message = "El ID de la categoría es obligatorio")
-    private Long categoryId;
+    @NotEmpty(message = "Debe indicar al menos una categoría")
+    private Set<Long> categoryIds;
 
     public CreateProductDto() {
     }
 
-    public CreateProductDto(String name, Double price, Integer stock) {
+    public CreateProductDto(String name, Double price, Integer stock, Long userId, Set<Long> categoryIds) {
         this.name = name;
         this.price = price;
         this.stock = stock;
+        this.userId = userId;
+        this.categoryIds = categoryIds;
     }
 
     public String getName() {
@@ -75,11 +72,11 @@ public class CreateProductDto {
         this.userId = userId;
     }
 
-    public Long getCategoryId() {
-        return categoryId;
+    public Set<Long> getCategoryIds() {
+        return categoryIds;
     }
 
-    public void setCategoryId(Long categoryId) {
-        this.categoryId = categoryId;
+    public void setCategoryIds(Set<Long> categoryIds) {
+        this.categoryIds = categoryIds;
     }
 }

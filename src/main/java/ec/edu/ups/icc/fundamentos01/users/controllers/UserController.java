@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,6 +14,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import ec.edu.ups.icc.fundamentos01.products.dtos.ProductFilterByUserDto;
+import ec.edu.ups.icc.fundamentos01.products.dtos.ProductResponseDto;
+import ec.edu.ups.icc.fundamentos01.products.services.ProductService;
 import ec.edu.ups.icc.fundamentos01.users.dtos.ChangePasswordDto;
 import ec.edu.ups.icc.fundamentos01.users.dtos.CreateUserDto;
 import ec.edu.ups.icc.fundamentos01.users.dtos.PartialUpdateUserDto;
@@ -27,8 +31,11 @@ public class UserController {
 
     private final UserService service;
 
-    public UserController(UserService service) {
+    private final ProductService productService;
+
+    public UserController(UserService service, ProductService productService) {
         this.service = service;
+        this.productService = productService;
     }
 
     @GetMapping
@@ -71,5 +78,20 @@ public class UserController {
             @Valid @RequestBody ChangePasswordDto dto) {
         service.changePassword(id, dto);
         return Map.of("message", "Contraseña actualizada correctamente");
+    }
+
+    /*
+     * Endpoint para consultar productos de un usuario.
+     *
+     * GET /api/users/{id}/products
+     * GET /api/users/{id}/products?name=laptop
+     * GET /api/users/{id}/products?minPrice=500&maxPrice=1500
+     * GET /api/users/{id}/products?categoryId=2
+     */
+    @GetMapping("/{id}/products")
+    public List<ProductResponseDto> findProductsByUser(
+            @PathVariable Long id,
+            @Valid @ModelAttribute ProductFilterByUserDto filters) {
+        return productService.findByUserIdWithFilters(id, filters);
     }
 }
