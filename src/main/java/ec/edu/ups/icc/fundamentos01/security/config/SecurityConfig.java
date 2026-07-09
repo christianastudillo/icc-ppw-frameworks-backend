@@ -70,7 +70,7 @@ public class SecurityConfig {
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/status/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
-
+                ///////////////
                 .anyRequest().authenticated()
             );
 
