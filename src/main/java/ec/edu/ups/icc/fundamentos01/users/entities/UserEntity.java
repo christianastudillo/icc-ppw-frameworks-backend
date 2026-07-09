@@ -17,22 +17,6 @@ import jakarta.persistence.Table;
 @Table(name = "users")
 public class UserEntity extends BaseEntity {
 
-    
-
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "user_roles",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
-    private Set<RoleEntity> roles = new HashSet<>();
-
-    
-
-
-
-
-
     @Column(nullable = false, length = 150)
     private String name;
 
@@ -41,6 +25,14 @@ public class UserEntity extends BaseEntity {
 
     @Column(nullable = false)
     private String passwordHash;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<RoleEntity> roles = new HashSet<>();
 
     public UserEntity() {
     }
@@ -75,14 +67,6 @@ public class UserEntity extends BaseEntity {
         this.passwordHash = passwordHash;
     }
 
-    public String getPassword() {
-        return passwordHash;
-    }
-
-    public void setPassword(String password) {
-        this.passwordHash = password;
-    }
-
     public Set<RoleEntity> getRoles() {
         return roles;
     }
@@ -90,7 +74,4 @@ public class UserEntity extends BaseEntity {
     public void setRoles(Set<RoleEntity> roles) {
         this.roles = roles;
     }
-
-
-    
 }

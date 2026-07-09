@@ -30,16 +30,11 @@ public class RegisterRequestDto {
     public RegisterRequestDto() {
     }
 
-    // Constructor lleno
     public RegisterRequestDto(String name, String email, String password) {
         this.name = name;
         this.email = email;
         this.password = password;
     }
-
-
-
-    // Getters y setters
 
     public String getName() {
         return name;
@@ -64,7 +59,4 @@ public class RegisterRequestDto {
     public void setPassword(String password) {
         this.password = password;
     }
-
-
-    
 }

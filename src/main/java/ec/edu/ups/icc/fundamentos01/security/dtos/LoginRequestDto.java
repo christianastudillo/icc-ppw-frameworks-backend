@@ -20,14 +20,10 @@ public class LoginRequestDto {
     public LoginRequestDto() {
     }
 
-    // Constructor lleno
     public LoginRequestDto(String email, String password) {
         this.email = email;
         this.password = password;
     }
-
-
-    // Getters y setters
 
     public String getEmail() {
         return email;
@@ -44,7 +40,4 @@ public class LoginRequestDto {
     public void setPassword(String password) {
         this.password = password;
     }
-
-
-    
 }

@@ -1,5 +1,5 @@
 package ec.edu.ups.icc.fundamentos01.security.services;
-// imports packages y clases....
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -27,12 +27,11 @@ import java.util.stream.Collectors;
 @Service
 public class AuthService {
 
-    // Dependencias inyectadas para login y registro
-    private final AuthenticationManager authenticationManager; // Valida credenciales
-    private final UserRepository userRepository;               // Acceso a BD
-    private final RoleRepository roleRepository;               // Gestión de roles
-    private final PasswordEncoder passwordEncoder;             // Hash de passwords
-    private final JwtUtil jwtUtil;                            // Generación de tokens
+    private final AuthenticationManager authenticationManager;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
     public AuthService(AuthenticationManager authenticationManager,
                        UserRepository userRepository,
@@ -49,12 +48,9 @@ public class AuthService {
     /**
      * Login: Valida credenciales y retorna JWT
      */
-    @Transactional(readOnly = true) // Solo lectura, no modifica BD
+    @Transactional(readOnly = true)
     public AuthResponseDto login(LoginRequestDto loginRequest) {
-        
-        // 1. Validar email y password con Spring Security
-        // authenticationManager usa UserDetailsService internamente
-        // Si falla: lanza BadCredentialsException → 401
+
         Authentication authentication = authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(
                 loginRequest.getEmail(),
@@ -62,52 +58,40 @@ public class AuthService {
             )
         );
 
-        // 2. Establecer usuario autenticado en contexto de seguridad
-        // Permite acceso a usuario actual en servicios
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // 3. Generar JWT con datos del usuario
         String jwt = jwtUtil.generateToken(authentication);
 
-        // 4. Extraer información del usuario autenticado
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
-        // Convertir authorities a Set<String> para la respuesta
         Set<String> roles = userDetails.getAuthorities().stream()
-            .map(item -> item.getAuthority()) // "ROLE_USER", "ROLE_ADMIN"
+            .map(item -> item.getAuthority())
             .collect(Collectors.toSet());
 
-        // 5. Retornar JWT + datos del usuario
         return new AuthResponseDto(
-            jwt,                      // Token para autenticación
-            userDetails.getId(),      // ID del usuario
-            userDetails.getName(),    // Nombre completo
-            userDetails.getEmail(),   // Email
-            roles                     // Roles asignados
+            jwt,
+            userDetails.getId(),
+            userDetails.getName(),
+            userDetails.getEmail(),
+            roles
         );
     }
 
     /**
      * Registro: Crea nuevo usuario y retorna JWT automáticamente
      */
-    @Transactional // Requiere transacción para INSERT
+    @Transactional
     public AuthResponseDto register(RegisterRequestDto registerRequest) {
-        
-        // 1. Validar que email no exista
-        // Si existe: lanza ConflictException → 409
+
         if (userRepository.existsByEmail(registerRequest.getEmail())) {
             throw new ConflictException("El email ya está registrado");
         }
 
-        // 2. Crear nueva entidad de usuario
         UserEntity user = new UserEntity();
         user.setName(registerRequest.getName());
         user.setEmail(registerRequest.getEmail());
-        // Hash del password con BCrypt (nunca almacenar en texto plano)
-        user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+        user.setPasswordHash(passwordEncoder.encode(registerRequest.getPassword()));
 
-        // 3. Asignar rol por defecto ROLE_USER
-        // Si no existe: lanza BadRequestException → 400
         RoleEntity userRole = roleRepository.findByName(RoleName.ROLE_USER)
             .orElseThrow(() -> new BadRequestException("Rol por defecto no encontrado"));
 
@@ -115,20 +99,15 @@ public class AuthService {
         roles.add(userRole);
         user.setRoles(roles);
 
-        // 4. Guardar en BD (INSERT)
         user = userRepository.save(user);
 
-        // 5. Generar JWT automáticamente para login directo
-        // No requiere que el usuario haga login después de registrarse
         UserDetailsImpl userDetails = UserDetailsImpl.build(user);
         String jwt = jwtUtil.generateTokenFromUserDetails(userDetails);
 
-        // Convertir roles a nombres de string
         Set<String> roleNames = user.getRoles().stream()
-            .map(role -> role.getName().name()) // RoleName.ROLE_USER → "ROLE_USER"
+            .map(role -> role.getName().name())
             .collect(Collectors.toSet());
 
-        // 6. Retornar JWT + datos del usuario registrado
         return new AuthResponseDto(
             jwt,
             user.getId(),

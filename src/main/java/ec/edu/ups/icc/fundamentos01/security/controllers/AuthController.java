@@ -1,10 +1,12 @@
 package ec.edu.ups.icc.fundamentos01.security.controllers;
-// imports packages y clases....
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import ec.edu.ups.icc.fundamentos01.security.dtos.AuthResponseDto;
 import ec.edu.ups.icc.fundamentos01.security.dtos.LoginRequestDto;
@@ -12,10 +14,10 @@ import ec.edu.ups.icc.fundamentos01.security.dtos.RegisterRequestDto;
 import ec.edu.ups.icc.fundamentos01.security.services.AuthService;
 
 @RestController
-@RequestMapping("/auth") // Prefijo para todos los endpoints de autenticación
+@RequestMapping("/auth")
 public class AuthController {
 
-    private final AuthService authService; // Servicio de lógica de autenticación
+    private final AuthService authService;
 
     public AuthController(AuthService authService) {
         this.authService = authService;
@@ -27,9 +29,8 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDto> login(@Valid @RequestBody LoginRequestDto loginRequest) {
-        // @Valid valida anotaciones en LoginRequestDto (email, password requeridos)
         AuthResponseDto response = authService.login(loginRequest);
-        return ResponseEntity.ok(response); // 200 OK con JWT
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -38,8 +39,7 @@ public class AuthController {
      */
     @PostMapping("/register")
     public ResponseEntity<AuthResponseDto> register(@Valid @RequestBody RegisterRequestDto registerRequest) {
-        // @Valid valida anotaciones en RegisterRequestDto
         AuthResponseDto response = authService.register(registerRequest);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response); // 201 Created con JWT
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }

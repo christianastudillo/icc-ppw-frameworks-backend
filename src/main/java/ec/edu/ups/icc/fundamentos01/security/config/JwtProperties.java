@@ -1,8 +1,5 @@
 package ec.edu.ups.icc.fundamentos01.security.config;
 
-
-
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
@@ -17,59 +14,54 @@ public class JwtProperties {
     private String header;
     private String prefix;
 
-    // Getters y Setters
-
+    public JwtProperties() {
+    }
+    
+    public JwtProperties(String secret, Long expiration, Long refreshExpiration, String issuer, String header,
+            String prefix) {
+        this.secret = secret;
+        this.expiration = expiration;
+        this.refreshExpiration = refreshExpiration;
+        this.issuer = issuer;
+        this.header = header;
+        this.prefix = prefix;
+    }
+    
     public String getSecret() {
         return secret;
     }
-
     public void setSecret(String secret) {
         this.secret = secret;
     }
-
     public Long getExpiration() {
         return expiration;
     }
-
     public void setExpiration(Long expiration) {
         this.expiration = expiration;
     }
-
     public Long getRefreshExpiration() {
         return refreshExpiration;
     }
-
     public void setRefreshExpiration(Long refreshExpiration) {
         this.refreshExpiration = refreshExpiration;
     }
-
     public String getIssuer() {
         return issuer;
     }
-
     public void setIssuer(String issuer) {
         this.issuer = issuer;
     }
-
     public String getHeader() {
         return header;
     }
-
     public void setHeader(String header) {
         this.header = header;
     }
-
     public String getPrefix() {
         return prefix;
     }
-
     public void setPrefix(String prefix) {
         this.prefix = prefix;
     }
 
-
-
-
-    
-   
 }

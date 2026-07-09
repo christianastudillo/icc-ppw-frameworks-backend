@@ -1,6 +1,5 @@
 package ec.edu.ups.icc.fundamentos01.security.services;
 
-
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -31,23 +30,18 @@ public class UserDetailsImpl implements UserDetails {
      * Factory method para crear UserDetailsImpl desde UserEntity
      */
     public static UserDetailsImpl build(UserEntity user) {
-        // Convertir roles a authorities de Spring Security
         Collection<GrantedAuthority> authorities = user.getRoles().stream()
-            .map(role -> new SimpleGrantedAuthority(role.getName().name()))
-            .collect(Collectors.toList());
+                .map(role -> new SimpleGrantedAuthority(role.getName().name()))
+                .collect(Collectors.toList());
 
         return new UserDetailsImpl(
-            user.getId(),
-            user.getName(),
-            user.getEmail(),
-            user.getPassword(),
-            authorities
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getPasswordHash(),
+                authorities
         );
     }
-
-    // ============== GETTERS ==============
-
-    
 
     public Long getId() {
         return id;
@@ -61,12 +55,6 @@ public class UserDetailsImpl implements UserDetails {
         return email;
     }
 
-
-
-
-
-    // ============== MÉTODOS DE UserDetails ==============
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return authorities;
@@ -79,7 +67,7 @@ public class UserDetailsImpl implements UserDetails {
 
     @Override
     public String getUsername() {
-        return email;  // Usamos email como username
+        return email;
     }
 
     @Override

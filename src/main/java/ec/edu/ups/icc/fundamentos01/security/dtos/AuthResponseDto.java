@@ -38,8 +38,6 @@ public class AuthResponseDto {
         this.roles = roles;
     }
 
-    // Getters y setters
-
     public String getToken() {
         return token;
     }
@@ -56,12 +54,9 @@ public class AuthResponseDto {
         this.type = type;
     }
 
-
-    
     public Long getUserId() {
         return userId;
     }
-
 
     public void setUserId(Long userId) {
         this.userId = userId;
