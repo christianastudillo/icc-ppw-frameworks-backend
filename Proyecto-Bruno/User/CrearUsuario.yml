@@ -1,0 +1,26 @@
+info:
+  name: CrearUsuario
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: http://localhost:8080/api/users
+  body:
+    type: json
+    data: |+
+      {
+        "email": "lupita@"
+      }
+
+
+
+
+
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

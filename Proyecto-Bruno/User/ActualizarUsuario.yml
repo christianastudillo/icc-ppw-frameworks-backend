@@ -1,0 +1,22 @@
+info:
+  name: ActualizarUsuario
+  type: http
+  seq: 4
+
+http:
+  method: PUT
+  url: http://localhost:8080/api/users/4
+  body:
+    type: json
+    data: |2-
+       {
+          "name": "Marco Farfan",
+          "email": "marco@gmail.com"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,28 @@
+info:
+  name: AScendente
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: http://localhost:8080/api/products/page?page=0&size=5&sortBy=name&direction=asc
+  params:
+    - name: page
+      value: "0"
+      type: query
+    - name: size
+      value: "5"
+      type: query
+    - name: sortBy
+      value: name
+      type: query
+    - name: direction
+      value: asc
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

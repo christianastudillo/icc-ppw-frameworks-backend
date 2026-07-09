@@ -1,0 +1,21 @@
+info:
+  name: PatchProducto
+  type: http
+  seq: 5
+
+http:
+  method: PATCH
+  url: http://localhost:8080/api/products/3
+  body:
+    type: json
+    data: |-
+      {
+        "price": 39.99
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
