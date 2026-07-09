@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.security.access.prepost.PreAuthorize;
 import ec.edu.ups.icc.fundamentos01.core.dtos.PaginationDto;
 import ec.edu.ups.icc.fundamentos01.products.dtos.CreateProductDto;
 import ec.edu.ups.icc.fundamentos01.products.dtos.PartialUpdateProductDto;
@@ -36,10 +36,15 @@ public class ProductController {
     /*
      * GET /products
      */
+    /*
+     * GET /products
+     */
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public List<ProductResponseDto> findAll() {
         return service.findAll();
     }
+
 
     /*
      * Endpoint paginado usando Page.
