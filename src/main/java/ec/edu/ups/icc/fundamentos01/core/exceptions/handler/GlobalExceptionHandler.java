@@ -107,18 +107,16 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ErrorResponse> handleAccessDeniedException(
-            AccessDeniedException ex,
-            HttpServletRequest request) {
-        ErrorResponse response = new ErrorResponse(
-                HttpStatus.FORBIDDEN,
-                "Acceso denegado. No tienes los permisos necesarios",
-                request.getRequestURI());
-
-        return ResponseEntity
-                .status(HttpStatus.FORBIDDEN)
-                .body(response);
-    }
+        public ResponseEntity<ErrorResponse> handleAccessDeniedException(
+                AccessDeniedException ex,
+                HttpServletRequest request) {
+        String message = ex.getMessage();
+        if (message == null || message.isBlank()) {
+                message = "Acceso denegado";
+        }
+        ErrorResponse response = new ErrorResponse(HttpStatus.FORBIDDEN, message, request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        }
 
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponse> handleAuthenticationException(

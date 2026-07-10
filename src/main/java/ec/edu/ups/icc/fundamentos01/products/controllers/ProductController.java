@@ -15,12 +15,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
+
 import ec.edu.ups.icc.fundamentos01.core.dtos.PaginationDto;
 import ec.edu.ups.icc.fundamentos01.products.dtos.CreateProductDto;
 import ec.edu.ups.icc.fundamentos01.products.dtos.PartialUpdateProductDto;
 import ec.edu.ups.icc.fundamentos01.products.dtos.ProductResponseDto;
 import ec.edu.ups.icc.fundamentos01.products.dtos.UpdateProductDto;
 import ec.edu.ups.icc.fundamentos01.products.services.ProductService;
+import ec.edu.ups.icc.fundamentos01.security.services.UserDetailsImpl;
 import jakarta.validation.Valid;
 
 @RestController
@@ -78,41 +81,38 @@ public class ProductController {
         return service.findOne(id);
     }
 
-    /*
-     * POST /products
-     */
     @PostMapping
-    public ProductResponseDto create(@Valid @RequestBody CreateProductDto dto) {
-        return service.create(dto);
+    public ProductResponseDto create(
+            @Valid @RequestBody CreateProductDto dto,
+            @AuthenticationPrincipal UserDetailsImpl currentUser) {
+        return service.create(dto, currentUser);
     }
 
-    /*
-     * PUT /products/{id}
-     */
     @PutMapping("/{id}")
     public ProductResponseDto update(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateProductDto dto) {
-        return service.update(id, dto);
+            @Valid @RequestBody UpdateProductDto dto,
+            @AuthenticationPrincipal UserDetailsImpl currentUser) {
+        return service.update(id, dto, currentUser);
     }
 
-    /*
-     * PATCH /products/{id}
-     */
     @PatchMapping("/{id}")
     public ProductResponseDto partialUpdate(
             @PathVariable Long id,
-            @Valid @RequestBody PartialUpdateProductDto dto) {
-        return service.partialUpdate(id, dto);
+            @Valid @RequestBody PartialUpdateProductDto dto,
+            @AuthenticationPrincipal UserDetailsImpl currentUser) {
+        return service.partialUpdate(id, dto, currentUser);
     }
 
-    /*
-     * DELETE /products/{id}
-     */
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        service.delete(id);
+    public void delete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetailsImpl currentUser) {
+        service.delete(id, currentUser);
     }
+
+
+
 
     /*
      * GET /products/user/{userId}

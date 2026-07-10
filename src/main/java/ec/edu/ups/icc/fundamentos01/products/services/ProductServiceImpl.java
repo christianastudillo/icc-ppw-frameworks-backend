@@ -9,6 +9,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +29,7 @@ import ec.edu.ups.icc.fundamentos01.products.dtos.UpdateProductDto;
 import ec.edu.ups.icc.fundamentos01.products.entities.ProductEntity;
 import ec.edu.ups.icc.fundamentos01.products.mappers.ProductMapper;
 import ec.edu.ups.icc.fundamentos01.products.repositories.ProductRepository;
+import ec.edu.ups.icc.fundamentos01.security.services.UserDetailsImpl;
 import ec.edu.ups.icc.fundamentos01.users.entities.UserEntity;
 import ec.edu.ups.icc.fundamentos01.users.repositories.UserRepository;
 
@@ -63,14 +66,15 @@ public class ProductServiceImpl implements ProductService {
         return ProductMapper.toResponse(entity);
     }
 
+    /*
+     * Crea un producto usando como owner al usuario autenticado.
+     *
+     * El owner ya no se toma desde el DTO (dto.getUserId() fue eliminado).
+     * Esto evita que un usuario cree productos a nombre de otro usuario.
+     */
     @Override
-    public ProductResponseDto create(CreateProductDto dto) {
-        UserEntity owner = userRepository.findById(dto.getUserId())
-                .orElseThrow(() -> new NotFoundException("User not found"));
-
-        if (owner.isDeleted()) {
-            throw new NotFoundException("User not found");
-        }
+    public ProductResponseDto create(CreateProductDto dto, UserDetailsImpl currentUser) {
+        UserEntity owner = findCurrentUserEntity(currentUser);
 
         Set<CategoryEntity> categories = resolveCategories(dto.getCategoryIds());
 
@@ -90,10 +94,18 @@ public class ProductServiceImpl implements ProductService {
         return ProductMapper.toResponse(saved);
     }
 
+    /*
+     * Actualiza completamente un producto.
+     *
+     * Se valida ownership antes de modificar: ADMIN puede editar
+     * cualquier producto, USER solo los propios.
+     */
     @Override
-    public ProductResponseDto update(Long id, UpdateProductDto dto) {
+    public ProductResponseDto update(Long id, UpdateProductDto dto, UserDetailsImpl currentUser) {
         ProductEntity entity = productRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Product not found"));
+
+        validateOwnership(entity, currentUser);
 
         Set<CategoryEntity> categories = resolveCategories(dto.getCategoryIds());
 
@@ -107,10 +119,18 @@ public class ProductServiceImpl implements ProductService {
         return ProductMapper.toResponse(saved);
     }
 
+    /*
+     * Actualiza parcialmente un producto.
+     *
+     * Solo modifica los campos que llegan en el DTO.
+     * También valida ownership antes de hacer cambios.
+     */
     @Override
-    public ProductResponseDto partialUpdate(Long id, PartialUpdateProductDto dto) {
+    public ProductResponseDto partialUpdate(Long id, PartialUpdateProductDto dto, UserDetailsImpl currentUser) {
         ProductEntity entity = productRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Product not found"));
+
+        validateOwnership(entity, currentUser);
 
         if (dto.getName() != null) {
             entity.setName(dto.getName());
@@ -133,10 +153,18 @@ public class ProductServiceImpl implements ProductService {
         return ProductMapper.toResponse(saved);
     }
 
+    /*
+     * Elimina lógicamente un producto.
+     *
+     * No se elimina físicamente de la base de datos.
+     * Se marca como deleted = true. Valida ownership antes de eliminar.
+     */
     @Override
-    public void delete(Long id) {
+    public void delete(Long id, UserDetailsImpl currentUser) {
         ProductEntity entity = productRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Product not found"));
+
+        validateOwnership(entity, currentUser);
 
         entity.setDeleted(true);
         productRepository.save(entity);
@@ -442,6 +470,63 @@ public class ProductServiceImpl implements ProductService {
         }
 
         return name.trim();
-    }  
+    }
+
+    /*
+     * Obtiene el usuario autenticado como entidad JPA.
+     *
+     * currentUser viene desde el token JWT (UserDetailsImpl).
+     * Se vuelve a consultar en base para asegurar que el usuario
+     * siga existiendo y no esté eliminado lógicamente.
+     */
+    private UserEntity findCurrentUserEntity(UserDetailsImpl currentUser) {
+
+        if (currentUser == null) {
+            throw new AccessDeniedException("Usuario no autenticado");
+        }
+
+        return userRepository.findByIdAndDeletedFalse(currentUser.getId())
+                .orElseThrow(() -> new AccessDeniedException("Usuario no autorizado"));
+    }
+
+    /*
+     * Valida si el usuario autenticado puede modificar o eliminar el producto.
+     *
+     * Reglas:
+     * 1. ROLE_ADMIN puede modificar cualquier producto.
+     * 2. ROLE_USER solo puede modificar productos propios.
+     */
+    private void validateOwnership(ProductEntity product, UserDetailsImpl currentUser) {
+
+        if (currentUser == null) {
+            throw new AccessDeniedException("Usuario no autenticado");
+        }
+
+        // Esta validación permite que un ADMIN pueda modificar cualquier producto
+        if (hasRole(currentUser, "ROLE_ADMIN")) {
+            return;
+        }
+
+        if (product.getOwner() == null || product.getOwner().getId() == null) {
+            throw new AccessDeniedException("El producto no tiene propietario válido");
+        }
+
+        if (!product.getOwner().getId().equals(currentUser.getId())) {
+            throw new AccessDeniedException("No puedes modificar productos ajenos");
+        }
+    }
+
+    /*
+     * Verifica si el usuario tiene un rol específico.
+     *
+     * Las authorities vienen desde UserDetailsImpl.
+     * Ejemplo: ROLE_USER, ROLE_ADMIN.
+     */
+    private boolean hasRole(UserDetailsImpl user, String role) {
+        return user.getAuthorities()
+                .stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(authority -> authority.equals(role));
+    }
 
 }
