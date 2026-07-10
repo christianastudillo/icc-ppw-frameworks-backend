@@ -995,11 +995,647 @@ necesita.
 
 ------------------------------------------------------------------------
 
+# Práctica 10: Paginación con Page y Slice
+
+Hasta la práctica anterior, cualquier endpoint de listado (`GET /api/products`,
+`GET /api/categories/{id}/products`) devolvía la colección completa en un
+solo `List<ProductResponseDto>`. Mientras la base de datos tenía pocos
+registros esto no se notaba, pero es un problema real de rendimiento: cada
+petición trae todos los productos, con su `owner` y sus `categories`
+anidados, sin importar si el cliente necesita 5 o 5000. En esta práctica
+resolví eso agregando paginación real a nivel de repositorio (no en
+memoria), usando dos estrategias que ofrece Spring Data: `Page` y `Slice`.
+
+## Qué implementé
+
+Agregué `PaginationDto` como el DTO que recibo por query params
+(`page`, `size`, `sortBy`, `direction`), con sus propias validaciones
+(`@Min`, `@Max`) para que un `page` negativo o un `size` fuera de rango
+no llegue nunca al repositorio. En `ProductServiceImpl` armé un método
+privado `createPageable(PaginationDto)` que construye el `Pageable` y
+valida que el campo de ordenamiento (`sortBy`) esté en una lista blanca
+de columnas permitidas, para no permitir ordenar por relaciones que no
+están preparadas para eso.
+
+Con eso agregué cuatro endpoints nuevos:
+
+| Método | Ruta | Descripción |
+| ------ | ---- | ----------- |
+| GET | `/api/products/page` | Productos activos con `Page` (incluye metadatos completos) |
+| GET | `/api/products/slice` | Productos activos con `Slice` (más liviano, sin contar el total) |
+| GET | `/api/categories/{id}/products/page` | Productos de una categoría, con filtros + `Page` |
+| GET | `/api/categories/{id}/products/slice` | Productos de una categoría, con filtros + `Slice` |
+
+## Evidencias
+
+> Las peticiones y respuestas de esta sección las armé a partir de mis
+> propios DTOs y del `PageImpl`/`SliceImpl` reales que devuelve Spring
+> Data, para que la forma y los nombres de campo sean exactos. No pude
+> levantar el servidor en este entorno para ejecutar la llamada real
+> (no tengo acceso a Maven Central ni a Postgres desde aquí), así que
+> cada bloque queda marcado como **(Pendiente: reemplazar con tu propia
+> captura real desde Bruno)** hasta que yo mismo corra la colección
+> `Proyecto-Bruno/Paginacion` y pegue la respuesta verdadera.
+
+### Captura de respuesta con Page
+
+```txt
+GET /api/products/page?page=0&size=5
+```
+
+```json
+{
+  "content": [
+    {
+      "id": 1,
+      "name": "Laptop",
+      "price": 850.0,
+      "stock": 10,
+      "owner": { "id": 1, "name": "Christian Astu", "email": "chro@example.com" },
+      "categories": [
+        { "id": 1, "name": "Computadoras", "description": "Equipos de cómputo" }
+      ],
+      "createdAt": "2026-07-01T10:46:23.086061",
+      "updatedAt": null
+    }
+  ],
+  "pageable": {
+    "pageNumber": 0,
+    "pageSize": 5,
+    "sort": { "sorted": true, "unsorted": false, "empty": false },
+    "offset": 0,
+    "paged": true,
+    "unpaged": false
+  },
+  "totalElements": 12,
+  "totalPages": 3,
+  "number": 0,
+  "size": 5,
+  "first": true,
+  "last": false,
+  "numberOfElements": 5,
+  "empty": false
+}
+```
+
+_(Pendiente: reemplazar con tu propia captura real desde Bruno.)_
+
+### Captura de respuesta con Slice
+
+```txt
+GET /api/products/slice?page=0&size=5
+```
+
+```json
+{
+  "content": [
+    {
+      "id": 1,
+      "name": "Laptop",
+      "price": 850.0,
+      "stock": 10,
+      "owner": { "id": 1, "name": "Christian Astu", "email": "chro@example.com" },
+      "categories": [
+        { "id": 1, "name": "Computadoras", "description": "Equipos de cómputo" }
+      ],
+      "createdAt": "2026-07-01T10:46:23.086061",
+      "updatedAt": null
+    }
+  ],
+  "pageable": {
+    "pageNumber": 0,
+    "pageSize": 5,
+    "offset": 0,
+    "paged": true,
+    "unpaged": false
+  },
+  "number": 0,
+  "size": 5,
+  "numberOfElements": 5,
+  "first": true,
+  "last": false,
+  "empty": false
+}
+```
+
+Como se puede ver, `totalElements` y `totalPages` **no aparecen** en la
+respuesta de `Slice`: eso es justamente lo que la hace más liviana, porque
+Spring Data no ejecuta el `COUNT(*)` adicional que sí necesita `Page`.
+
+_(Pendiente: reemplazar con tu propia captura real desde Bruno.)_
+
+### Captura de error por paginación inválida
+
+```txt
+GET /api/products/page?page=-1&size=0
+```
+
+```json
+{
+  "timestamp": "2026-07-10T09:12:04.1122334",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Parámetros de consulta inválidos",
+  "path": "/api/products/page",
+  "details": {
+    "page": "La página debe ser mayor o igual a 0",
+    "size": "El tamaño debe ser mayor o igual a 1"
+  }
+}
+```
+
+_(Pendiente: reemplazar con tu propia captura real desde Bruno.)_
+
+### Captura de endpoint de categoría paginado (Page)
+
+```txt
+GET /api/categories/2/products/page?page=0&size=5
+```
+
+Debe evidenciar productos filtrados por la categoría `2`, con los mismos
+metadatos de `Page` que el endpoint general.
+
+_(Pendiente: reemplazar con tu propia captura real desde Bruno.)_
+
+### Captura de endpoint de categoría paginado (Slice)
+
+```txt
+GET /api/categories/2/products/slice?page=0&size=5
+```
+
+Debe evidenciar productos filtrados por la categoría `2`, sin
+`totalElements` ni `totalPages`.
+
+_(Pendiente: reemplazar con tu propia captura real desde Bruno.)_
+
+## Colección Bruno
+
+Estos cuatro casos ya están armados en `Proyecto-Bruno/Paginacion`
+(`DatosCompletos`, `Slice/Slice`, `Slice/Slice1`, `Slice/Slice2`,
+`Errores/Error1` a `Error3`, `PaginacionCategorias/PC1` y `PC2`,
+`Metadatos/AScendente` y `Descente`). Solo me falta correrlos con el
+servidor levantado y pegar las respuestas reales en los bloques de
+arriba.
+
+## Explicación breve
+
+**¿Cuál es la diferencia entre `Page` y `Slice`?**
+
+Las dos traen resultados paginados, pero `Page` además calcula
+`totalElements` y `totalPages`, lo que internamente obliga a Spring Data
+a ejecutar una segunda consulta `COUNT(*)` sobre la tabla. `Slice` se
+salta ese conteo: solo pide `size + 1` registros para saber si existe
+una página siguiente (`hasNext()`), y con eso arma `first`/`last` sin
+tocar el total. Por eso uso `Page` cuando de verdad necesito mostrar
+"página 2 de 8" en el frontend, y `Slice` cuando solo necesito scroll
+infinito o "cargar más", porque es más barato para la base de datos.
+
+**¿Por qué la paginación debe aplicarse en el repositorio y no después
+de traer todos los datos en memoria?**
+
+Porque si trajera todos los productos con `findAll()` y luego los
+recortara con `.subList()` en Java, la base de datos seguiría haciendo
+el trabajo pesado de leer y transportar cada fila, cada `owner` y cada
+`category` por la red, aunque el cliente solo pida 5 resultados. Eso no
+escala: con 10 productos no se nota, pero con 100 000 sería un endpoint
+lentísimo y un consumo de memoria innecesario en el propio backend.
+Pasarle el `Pageable` directamente a `ProductRepository` hace que sea
+PostgreSQL quien resuelva el `LIMIT`/`OFFSET` (o el equivalente con
+`keyset`), que es exactamente para lo que está optimizado un motor de
+base de datos.
+
+------------------------------------------------------------------------
+
+# Práctica 11: Autenticación y Autorización con JWT
+
+Todo lo anterior (CRUD de productos, categorías, filtros, paginación)
+estaba completamente abierto: cualquiera que conociera la URL podía
+crear, editar o borrar cualquier recurso. En esta práctica le puse una
+puerta de entrada real a la API con autenticación basada en JWT
+(JSON Web Token), siguiendo el patrón *stateless* que se espera de una
+API REST: el servidor no guarda sesión, toda la identidad del usuario
+viaja firmada dentro del propio token en cada petición.
+
+## Qué implementé
+
+- **`RoleEntity`** y el enum `RoleName` (`ROLE_USER`, `ROLE_ADMIN`),
+  inicializados automáticamente al arrancar la app con
+  `SecurityDataInitializer`.
+- **`UserEntity`** actualizado con relación `ManyToMany` hacia los roles
+  (tabla intermedia `user_roles`) y campo `passwordHash`.
+- **`RegisterRequestDto`** y **`LoginRequestDto`**, con sus propias
+  validaciones (`@Email`, contraseña con mínimo 8 caracteres y al menos
+  una mayúscula/minúscula/número).
+- **`JwtUtil`**, que genera y valida el token firmado (`jjwt`), con
+  tiempo de expiración configurable desde `application.yml`.
+- **`JwtAuthenticationFilter`**, que intercepta cada request, extrae el
+  header `Authorization: Bearer <token>`, lo valida y deja al usuario
+  autenticado en el `SecurityContext`.
+- **`JwtAuthenticationEntryPoint`**, que responde `401` con el formato
+  `ErrorResponse` cuando no hay token o es inválido — sin este
+  componente, Spring Security devolvía su propia página de error por
+  defecto en vez de JSON.
+- **`SecurityConfig`**, con `/auth/**`, `/status/**` y `/actuator/**`
+  públicos, y `.anyRequest().authenticated()` para todo lo demás.
+- **`AuthService`** y **`AuthController`**, con los endpoints
+  `POST /api/auth/register` y `POST /api/auth/login`.
+
+## Evidencias
+
+> Igual que en la práctica anterior, no pude levantar el servidor en
+> este entorno (sin acceso a Maven Central ni a una base de datos
+> Postgres desde aquí), así que las respuestas de abajo son la forma
+> exacta que arma `AuthResponseDto` y `JwtAuthenticationEntryPoint` en mi
+> código, no una ejecución real todavía.
+
+### Captura de registro exitoso
+
+```txt
+POST /api/auth/register
+```
+
+```json
+{
+  "name": "Usuario A",
+  "email": "usera@ups.edu.ec",
+  "password": "Password123"
+}
+```
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyYUB1cHMuZWR1LmVjIiwicm9sZXMiOlsiUk9MRV9VU0VSIl0sImlhdCI6MTc1MjE1MDAwMCwiZXhwIjoxNzUyMTUxODAwfQ.firma-real-generada-por-jjwt",
+  "type": "Bearer",
+  "userId": 6,
+  "name": "Usuario A",
+  "email": "usera@ups.edu.ec",
+  "roles": ["ROLE_USER"]
+}
+```
+
+Status esperado: `201 Created`. Confirma token generado y `ROLE_USER`
+asignado automáticamente (así lo hace `AuthService.register()`, ningún
+usuario nuevo puede auto-asignarse `ROLE_ADMIN`).
+
+_(Pendiente: reemplazar con tu propia captura real desde Bruno.)_
+
+### Captura de login exitoso
+
+```txt
+POST /api/auth/login
+```
+
+```json
+{
+  "email": "usera@ups.edu.ec",
+  "password": "Password123"
+}
+```
+
+Respuesta con el mismo formato de arriba (`200 OK`), con un token nuevo
+y los roles reales del usuario.
+
+_(Pendiente: reemplazar con tu propia captura real desde Bruno.)_
+
+### Captura de endpoint protegido sin token
+
+```txt
+GET /api/products/page?page=0&size=5
+```
+
+```json
+{
+  "timestamp": "2026-07-10T09:20:11.5566778",
+  "status": 401,
+  "error": "Unauthorized",
+  "message": "Token de autenticación inválido o no proporcionado. Debe incluir un token válido en el header Authorization: Bearer <token>",
+  "path": "/api/products/page"
+}
+```
+
+_(Pendiente: reemplazar con tu propia captura real desde Bruno.)_
+
+### Captura de endpoint protegido con token
+
+```http
+GET /api/products/page?page=0&size=5
+Authorization: Bearer <token>
+```
+
+Status esperado: `200 OK`, con el mismo cuerpo de `Page<ProductResponseDto>`
+documentado en la Práctica 10.
+
+_(Pendiente: reemplazar con tu propia captura real desde Bruno.)_
+
+## Colección Bruno
+
+Register, Login y las pruebas con/sin token ya están armadas en
+`bruno/auth` (`Register.bru`, `Login.bru`, `EndPointSinTokken.bru`) y en
+`Proyecto-Bruno/Practica11/Auth` (con el script que guarda el token
+automáticamente en `{{token}}` después de cada login).
+
+------------------------------------------------------------------------
+
+# Práctica 12: Roles y @PreAuthorize
+
+Con JWT ya resuelto quedaba una pregunta abierta: cualquier usuario
+autenticado, sin importar su rol, podía llegar a cualquier endpoint. En
+esta práctica agregué una segunda capa de seguridad — autorización por
+rol — usando `@PreAuthorize` de Spring Security a nivel de método.
+
+## Qué implementé
+
+- Confirmé `@EnableMethodSecurity(prePostEnabled = true)` en
+  `SecurityConfig` (necesario para que `@PreAuthorize` funcione).
+- Agregué `@PreAuthorize("hasRole('ADMIN')")` sobre
+  `ProductController.findAll()` (`GET /api/products`), que es el único
+  endpoint que devuelve la lista completa sin paginar y sin filtrar por
+  dueño — por eso lo until reservé solo para administradores.
+- Actualicé `GlobalExceptionHandler` con tres manejadores nuevos:
+  `AuthorizationDeniedException` (la que lanza `@PreAuthorize` en
+  Spring Security 6.x) y `AccessDeniedException` (la que se usa desde
+  código propio, incluida la de ownership en la Práctica 13) devuelven
+  `403`; `AuthenticationException` devuelve `401`. Sin estos
+  manejadores, un acceso denegado por rol devolvía `500` en vez de
+  `403`.
+
+## Pendiente detectado
+
+La guía que subiste para esta práctica también pide un endpoint
+`GET /api/users/me` (con `CurrentUserController` y
+`CurrentUserResponseDto`) que devuelva `id`, `name`, `email` y `roles`
+del usuario autenticado usando `@AuthenticationPrincipal`. Revisé el
+repositorio y ese controlador **todavía no existe** — solo implementé
+la parte de `@PreAuthorize` sobre `findAll()` en una versión anterior de
+esta guía. Dejo la sección de captura correspondiente marcada como
+pendiente de implementación, no solo de captura.
+
+## Evidencias
+
+> Mismo caso que las prácticas anteriores: no ejecuté el servidor real
+> en este entorno, así que dejo la forma exacta de la respuesta y el
+> aviso de reemplazo.
+
+### Captura de usuario autenticado — **pendiente de implementar**
+
+```txt
+GET /api/users/me
+```
+
+Este endpoint aún no existe en el código (`CurrentUserController` no
+está creado). Falta implementarlo antes de poder capturar esta
+evidencia.
+
+### Captura de acceso denegado por rol
+
+```txt
+GET /api/products
+Authorization: Bearer <token-ROLE_USER>
+```
+
+```json
+{
+  "timestamp": "2026-07-10T09:25:40.9988776",
+  "status": 403,
+  "error": "Forbidden",
+  "message": "No tienes permisos para acceder a este recurso",
+  "path": "/api/products"
+}
+```
+
+_(Pendiente: reemplazar con tu propia captura real desde Bruno.)_
+
+### Captura de acceso permitido por rol ADMIN
+
+```txt
+GET /api/products
+Authorization: Bearer <token-ROLE_ADMIN>
+```
+
+Status esperado: `200 OK`, con la lista completa de productos activos
+(`List<ProductResponseDto>`).
+
+_(Pendiente: reemplazar con tu propia captura real desde Bruno.)_
+
+## Colección Bruno
+
+Armé `bruno/Product/01 - ListarProductoAll.bru` (con el header
+`Authorization: Bearer {{token}}`) y
+`bruno/Product/11 - ListarProductoAllSinToken.bru` para los tres casos:
+`403` con usuario normal, `200` con administrador y `401` sin token.
+
+## Explicación breve
+
+**¿Cuál es la diferencia entre autenticación y autorización?**
+
+Autenticación responde *¿quién eres?*: es lo que resolví en la Práctica
+11 validando el JWT y confirmando que el usuario existe y su contraseña
+es correcta. Autorización responde *¿qué puedes hacer?*: una vez que sé
+quién eres, todavía tengo que decidir si tienes permiso para la acción
+puntual que estás pidiendo. Por eso son dos pasos distintos y en orden:
+primero pasa por `JwtAuthenticationFilter` (autenticación, devuelve
+`401` si falla) y solo después llega a `@PreAuthorize` (autorización,
+devuelve `403` si falla).
+
+**¿Por qué `GET /api/products` debe ser solo para ADMIN, mientras
+`GET /api/products/page` puede ser consumido por cualquier usuario
+autenticado?**
+
+Porque no son el mismo tipo de consulta. `/api/products` devuelve
+*todos* los productos activos del sistema sin paginar y sin ningún
+filtro de dueño — en la práctica, expone datos de todos los usuarios en
+una sola respuesta, lo cual es información operativa que solo le sirve
+a un administrador. `/api/products/page` en cambio está pensado como el
+endpoint normal de navegación para cualquier usuario: viene paginado,
+no dispara un `SELECT *` gigante, y no revela nada que un usuario común
+no debería poder consultar. Restringir el primero y dejar abierto el
+segundo es justamente aplicar el principio de menor privilegio: cada
+rol solo llega hasta donde necesita.
+
+------------------------------------------------------------------------
+
+# Práctica 13: Validación de Ownership
+
+Con roles ya funcionando faltaba resolver la última pregunta de
+seguridad: que un usuario con `ROLE_USER` no pueda modificar o borrar
+productos que no le pertenecen, aunque esté perfectamente autenticado y
+autorizado a *usar* el endpoint. A esto se le llama *ownership*, y a
+diferencia de la Práctica 12 (que se resuelve antes de entrar al
+método, con `@PreAuthorize`), esta validación necesita conocer el dato
+concreto — el producto — así que vive dentro del servicio.
+
+## Qué implementé
+
+- Eliminé el campo `userId` de `CreateProductDto`: ya no confío en lo
+  que mande el cliente en el body para decidir quién es el dueño de un
+  producto nuevo.
+- Cambié las firmas de `create`, `update`, `partialUpdate` y `delete`
+  en `ProductService`/`ProductServiceImpl` para recibir
+  `UserDetailsImpl currentUser`, inyectado en el controlador con
+  `@AuthenticationPrincipal`.
+- En `create()`, el owner ahora sale de
+  `findCurrentUserEntity(currentUser)`, que reconsulta al usuario en
+  base para asegurarme de que sigue existiendo y no está eliminado
+  lógicamente.
+- En `update()`, `partialUpdate()` y `delete()` agregué
+  `validateOwnership(entity, currentUser)` justo después de buscar el
+  producto: si el usuario tiene `ROLE_ADMIN` puede seguir sin
+  restricciones; si no, comparo `product.getOwner().getId()` contra
+  `currentUser.getId()` y lanzo `AccessDeniedException` si no coinciden.
+- Ajusté el handler de `AccessDeniedException` en
+  `GlobalExceptionHandler` para que use `ex.getMessage()` en vez de un
+  texto fijo, así el cliente recibe el motivo real
+  ("No puedes modificar productos ajenos", "Usuario no autenticado",
+  etc.) y no un mensaje genérico.
+
+## Evidencias
+
+> Mismo caso: no pude ejecutar el servidor real en este sandbox, así
+> que las respuestas siguientes salen directo de la lógica que quedó en
+> `ProductServiceImpl.validateOwnership()` y del `GlobalExceptionHandler`
+> actualizado.
+
+### Captura de creación de producto con usuario autenticado
+
+```txt
+POST /api/products
+Authorization: Bearer <token-usuario-A>
+```
+
+```json
+{
+  "name": "Laptop Usuario A",
+  "price": 900.0,
+  "stock": 10,
+  "categoryIds": [1]
+}
+```
+
+```json
+{
+  "id": 14,
+  "name": "Laptop Usuario A",
+  "price": 900.0,
+  "stock": 10,
+  "owner": { "id": 6, "name": "Usuario A", "email": "usera@ups.edu.ec" },
+  "categories": [
+    { "id": 1, "name": "Computadoras", "description": "Equipos de cómputo" }
+  ],
+  "createdAt": "2026-07-10T09:30:02.1112223",
+  "updatedAt": null
+}
+```
+
+Status esperado: `201 Created`. El campo `owner.id` coincide con el id
+del usuario del token, aunque el body nunca envió `userId`.
+
+_(Pendiente: reemplazar con tu propia captura real desde Bruno.)_
+
+### Captura de bloqueo por producto ajeno
+
+```txt
+PUT /api/products/14
+Authorization: Bearer <token-usuario-B>
+```
+
+```json
+{
+  "timestamp": "2026-07-10T09:31:47.4455661",
+  "status": 403,
+  "error": "Forbidden",
+  "message": "No puedes modificar productos ajenos",
+  "path": "/api/products/14"
+}
+```
+
+_(Pendiente: reemplazar con tu propia captura real desde Bruno.)_
+
+### Captura de eliminación de producto ajeno bloqueada
+
+```txt
+DELETE /api/products/14
+Authorization: Bearer <token-usuario-B>
+```
+
+Status esperado: `403 Forbidden`, mismo formato de `ErrorResponse` que
+el bloqueo de `PUT`.
+
+_(Pendiente: reemplazar con tu propia captura real desde Bruno.)_
+
+### Captura de ADMIN modificando producto ajeno
+
+```txt
+PUT /api/products/14
+Authorization: Bearer <token-usuario-B-ahora-ADMIN>
+```
+
+Status esperado: `200 OK`. `validateOwnership()` detecta `ROLE_ADMIN` y
+deja pasar la modificación aunque Usuario B no sea el dueño.
+
+_(Pendiente: reemplazar con tu propia captura real desde Bruno.)_
+
+## Colección Bruno
+
+Armé una carpeta completa `bruno/Practica13` con los 10 pasos en orden
+(crear categoría base, registrar Usuario A y B, crear producto,
+actualizar propio, actualizar/eliminar ajeno con `403`, subir a Usuario
+B a `ROLE_ADMIN` y repetir actualizar/eliminar con `200`/`204`), con los
+tokens guardándose solos vía `script:post-response` en cada login.
+
+## Explicación breve
+
+**¿Qué es ownership?**
+
+Es la relación entre un recurso y el usuario dueño de ese recurso — en
+este caso, el campo `owner` de `ProductEntity`. Validar ownership
+significa comprobar, antes de dejar modificar o borrar algo, que quien
+hace la petición sea efectivamente el dueño del registro (o tenga un
+permiso especial, como `ROLE_ADMIN`, que le permita saltarse esa regla).
+No es lo mismo que autenticación (¿quién eres?) ni que autorización por
+rol (¿qué tipo de acciones puedes hacer en general?): ownership es *¿es
+tuyo este recurso en particular?*, y por eso solo se puede resolver
+después de buscar el recurso concreto en base de datos.
+
+**¿Por qué no es seguro recibir `userId` en `CreateProductDto`?**
+
+Porque si el cliente puede mandar cualquier `userId` en el body, un
+usuario autenticado con id `2` podría enviar `"userId": 5` y crear
+productos a nombre del usuario `5`, sin que nada se lo impida — el
+servidor confiaría ciegamente en un dato que viene del cliente y que es
+trivial de falsificar. La única fuente confiable de "quién soy" es el
+token JWT que ya fue validado por `JwtAuthenticationFilter`, así que el
+owner tiene que salir de ahí (`@AuthenticationPrincipal`), nunca del
+body de la petición.
+
+**¿Cuál es la diferencia entre autorización por rol y autorización por
+ownership?**
+
+La autorización por rol (Práctica 12, `@PreAuthorize`) se evalúa
+*antes* de ejecutar el método, y solo necesita saber el rol del usuario
+autenticado — no le importa qué recurso específico se va a tocar. La
+autorización por ownership se evalúa *dentro* del servicio, después de
+haber buscado el recurso en base de datos, porque necesita comparar un
+dato concreto (`product.getOwner().getId()`) contra el usuario actual.
+Por eso una vive en `SecurityConfig`/anotaciones y la otra vive como
+lógica de negocio en `ProductServiceImpl`: no hay forma de saber si un
+producto es "ajeno" sin haberlo consultado primero.
+
+------------------------------------------------------------------------
+
 # Conclusión
 
 Se desarrolló una API REST completa utilizando Spring Boot aplicando
-buenas prácticas de arquitectura backend.
+buenas prácticas de arquitectura backend: separación por capas,
+persistencia real en PostgreSQL vía Docker, validación de datos con
+DTOs, manejo centralizado de errores, relaciones JPA, filtros
+dinámicos, paginación con `Page`/`Slice`, autenticación *stateless* con
+JWT, autorización por rol con `@PreAuthorize` y, finalmente, validación
+de ownership a nivel de servicio para que cada usuario solo pueda
+modificar sus propios recursos (salvo los administradores).
 
-La aplicación cuenta con separación de responsabilidades, persistencia
-real en PostgreSQL, conexión mediante Docker y validación de datos
-mediante DTOs.
+Quedan pendientes, para cuando corra el proyecto con el servidor
+levantado de verdad: reemplazar todos los bloques marcados como
+"(Pendiente: reemplazar con tu propia captura real desde Bruno)" por
+capturas reales desde Bruno, e implementar el endpoint `GET /api/users/me`
+que pide la guía de la Práctica 12 (`CurrentUserController`), que
+todavía no existe en el código.

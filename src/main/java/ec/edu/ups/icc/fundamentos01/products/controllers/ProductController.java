@@ -69,8 +69,10 @@ public class ProductController {
      * GET /products/slice?page=0&size=5&sortBy=createdAt&direction=desc
      */
     @GetMapping("/slice")
-    public Slice<ProductResponseDto> findAllSlice(@Valid @ModelAttribute PaginationDto pagination) {
-        return service.findAllSlice(pagination);
+    public Slice<ProductResponseDto> findAllSlice(
+            @Valid @ModelAttribute PaginationDto pagination,
+            @AuthenticationPrincipal UserDetailsImpl currentUser) {
+        return service.findAllSlice(pagination, currentUser);
     }
 
     /*

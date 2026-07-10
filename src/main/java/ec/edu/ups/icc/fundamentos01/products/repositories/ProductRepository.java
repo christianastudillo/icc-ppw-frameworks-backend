@@ -104,6 +104,17 @@ public interface ProductRepository extends JpaRepository<ProductEntity, Long> {
     Slice<ProductEntity> findActiveSlice(Pageable pageable);
 
     /*
+     * Consulta productos activos de un usuario usando Slice.
+     */
+    @Query("""
+            SELECT p
+            FROM ProductEntity p
+            WHERE p.deleted = false
+              AND p.owner.id = :ownerId
+            """)
+    Slice<ProductEntity> findByOwnerIdSlice(@Param("ownerId") Long ownerId, Pageable pageable);
+
+    /*
      * Busca productos activos de una categoría aplicando filtros opcionales,
      * usando Page.
      */

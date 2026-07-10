@@ -269,11 +269,13 @@ public class ProductServiceImpl implements ProductService {
      */
     @Override
     @Transactional(readOnly = true)
-    public Slice<ProductResponseDto> findAllSlice(PaginationDto pagination) {
+    public Slice<ProductResponseDto> findAllSlice(PaginationDto pagination, UserDetailsImpl currentUser) {
+
+        UserEntity owner = findCurrentUserEntity(currentUser);
 
         Pageable pageable = createPageable(pagination);
 
-        return productRepository.findActiveSlice(pageable)
+        return productRepository.findByOwnerIdSlice(owner.getId(), pageable)
                 .map(ProductMapper::toResponse);
     }
 

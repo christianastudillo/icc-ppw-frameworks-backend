@@ -41,7 +41,7 @@ public interface ProductService {
     /*
      * Retorna productos activos usando Slice.
      */
-    Slice<ProductResponseDto> findAllSlice(PaginationDto pagination);
+    Slice<ProductResponseDto> findAllSlice(PaginationDto pagination, UserDetailsImpl currentUser);
 
     /*
      * Retorna productos de una categoría con filtros y Page.
