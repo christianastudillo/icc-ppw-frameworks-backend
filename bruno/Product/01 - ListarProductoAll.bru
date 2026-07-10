@@ -9,3 +9,18 @@ get {
   body: none
   auth: none
 }
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+docs {
+  Practica 12: protegido con @PreAuthorize("hasRole('ADMIN')").
+
+  1. Corre auth/Register (si el usuario no existe) y luego auth/Login.
+     El token queda guardado automaticamente en {{token}}.
+  2. Con un usuario ROLE_USER -> debe responder 403 Forbidden.
+  3. Asigna ROLE_ADMIN al usuario en la base de datos y vuelve a
+     correr Login para refrescar {{token}} con el rol nuevo.
+  4. Con ese token de ADMIN -> debe responder 200 OK con la lista completa.
+}

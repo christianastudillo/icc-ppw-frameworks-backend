@@ -6,8 +6,16 @@ meta {
 
 post {
   url: http://localhost:8080/api/auth/register
-  body: none
+  body: json
   auth: inherit
+}
+
+body:json {
+  {
+    "name": "Christian Astu",
+    "email": "chro@example.com",
+    "password": "Secure123"
+  }
 }
 
 settings {

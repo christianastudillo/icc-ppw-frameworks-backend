@@ -1,0 +1,18 @@
+meta {
+  name: ListarProductoAllSinToken
+  type: http
+  seq: 11
+}
+
+get {
+  url: http://localhost:8080/api/products
+  body: none
+  auth: none
+}
+
+docs {
+  Practica 12: mismo endpoint que "01 - ListarProductoAll" pero SIN
+  header Authorization. Como .anyRequest().authenticated() bloquea
+  antes de llegar a @PreAuthorize, debe responder 401 Unauthorized
+  (no 403), sin importar el rol que tendria el usuario.
+}
