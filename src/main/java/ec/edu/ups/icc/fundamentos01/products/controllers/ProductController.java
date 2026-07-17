@@ -24,10 +24,18 @@ import ec.edu.ups.icc.fundamentos01.products.dtos.ProductResponseDto;
 import ec.edu.ups.icc.fundamentos01.products.dtos.UpdateProductDto;
 import ec.edu.ups.icc.fundamentos01.products.services.ProductService;
 import ec.edu.ups.icc.fundamentos01.security.services.UserDetailsImpl;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
+@Tag(name = "Productos", description = "Endpoints para gestión de productos")
+@SecurityRequirement(name = "bearerAuth") // Requiere autenticación JWT para todos los endpoints de este controlador@RestController
 @RestController
 @RequestMapping("/products")
+
+
 public class ProductController {
 
     private final ProductService service;
@@ -42,6 +50,10 @@ public class ProductController {
     /*
      * GET /products
      */
+    @Operation(summary = "Listar productos", description = "Devuelve la lista completa de productos. Requiere rol ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Lista de productos obtenida exitosamente.")
+    @ApiResponse(responseCode = "401", description = "No autenticado.")
+    @ApiResponse(responseCode = "403", description = "No tiene permisos para acceder a este recurso.")
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public List<ProductResponseDto> findAll() {
@@ -56,6 +68,10 @@ public class ProductController {
      * GET /products/page?page=0&size=5
      * GET /products/page?page=0&size=5&sortBy=price&direction=desc
      */
+    @Operation(summary = "Listar productos paginados", description = "Devuelve una página de productos usando parámetros de paginación (page, size, sortBy, direction).")
+    @ApiResponse(responseCode = "200", description = "Página de productos obtenida exitosamente.")
+    @ApiResponse(responseCode = "400", description = "Parámetros de paginación inválidos.")
+    @ApiResponse(responseCode = "401", description = "No autenticado.")
     @GetMapping("/page")
     public Page<ProductResponseDto> findAllPage(@Valid @ModelAttribute PaginationDto pagination) {
         return service.findAllPage(pagination);
@@ -68,6 +84,10 @@ public class ProductController {
      * GET /products/slice?page=0&size=5
      * GET /products/slice?page=0&size=5&sortBy=createdAt&direction=desc
      */
+    @Operation(summary = "Listar productos paginados (slice)", description = "Devuelve un slice de productos del usuario autenticado usando parámetros de paginación (page, size, sortBy, direction).")
+    @ApiResponse(responseCode = "200", description = "Slice de productos obtenido exitosamente.")
+    @ApiResponse(responseCode = "400", description = "Parámetros de paginación inválidos.")
+    @ApiResponse(responseCode = "401", description = "No autenticado.")
     @GetMapping("/slice")
     public Slice<ProductResponseDto> findAllSlice(
             @Valid @ModelAttribute PaginationDto pagination,
@@ -78,11 +98,19 @@ public class ProductController {
     /*
      * GET /products/{id}
      */
+    @Operation(summary = "Obtener producto por ID", description = "Devuelve los datos de un producto específico según su identificador.")
+    @ApiResponse(responseCode = "200", description = "Producto encontrado exitosamente.")
+    @ApiResponse(responseCode = "404", description = "No se encontró un producto con el ID indicado.")
+    @ApiResponse(responseCode = "401", description = "No autenticado.")
     @GetMapping("/{id}")
     public ProductResponseDto findOne(@PathVariable Long id) {
         return service.findOne(id);
     }
 
+    @Operation(summary = "Crear producto", description = "Crea un nuevo producto asociado al usuario autenticado.")
+    @ApiResponse(responseCode = "200", description = "Producto creado exitosamente.")
+    @ApiResponse(responseCode = "400", description = "Solicitud inválida, datos de entrada incorrectos.")
+    @ApiResponse(responseCode = "401", description = "No autenticado.")
     @PostMapping
     public ProductResponseDto create(
             @Valid @RequestBody CreateProductDto dto,
@@ -90,6 +118,12 @@ public class ProductController {
         return service.create(dto, currentUser);
     }
 
+    @Operation(summary = "Actualizar producto", description = "Actualiza completamente los datos de un producto existente.")
+    @ApiResponse(responseCode = "200", description = "Producto actualizado exitosamente.")
+    @ApiResponse(responseCode = "400", description = "Solicitud inválida, datos de entrada incorrectos.")
+    @ApiResponse(responseCode = "401", description = "No autenticado.")
+    @ApiResponse(responseCode = "403", description = "No tiene permisos para actualizar este producto.")
+    @ApiResponse(responseCode = "404", description = "No se encontró un producto con el ID indicado.")
     @PutMapping("/{id}")
     public ProductResponseDto update(
             @PathVariable Long id,
@@ -98,6 +132,12 @@ public class ProductController {
         return service.update(id, dto, currentUser);
     }
 
+    @Operation(summary = "Actualizar producto parcialmente", description = "Actualiza uno o más campos de un producto existente.")
+    @ApiResponse(responseCode = "200", description = "Producto actualizado exitosamente.")
+    @ApiResponse(responseCode = "400", description = "Solicitud inválida, datos de entrada incorrectos.")
+    @ApiResponse(responseCode = "401", description = "No autenticado.")
+    @ApiResponse(responseCode = "403", description = "No tiene permisos para actualizar este producto.")
+    @ApiResponse(responseCode = "404", description = "No se encontró un producto con el ID indicado.")
     @PatchMapping("/{id}")
     public ProductResponseDto partialUpdate(
             @PathVariable Long id,
@@ -106,6 +146,11 @@ public class ProductController {
         return service.partialUpdate(id, dto, currentUser);
     }
 
+    @Operation(summary = "Eliminar producto", description = "Elimina un producto existente según su identificador.")
+    @ApiResponse(responseCode = "200", description = "Producto eliminado exitosamente.")
+    @ApiResponse(responseCode = "401", description = "No autenticado.")
+    @ApiResponse(responseCode = "403", description = "No tiene permisos para eliminar este producto.")
+    @ApiResponse(responseCode = "404", description = "No se encontró un producto con el ID indicado.")
     @DeleteMapping("/{id}")
     public void delete(
             @PathVariable Long id,
@@ -119,6 +164,10 @@ public class ProductController {
     /*
      * GET /products/user/{userId}
      */
+    @Operation(summary = "Listar productos por usuario", description = "Devuelve la lista de productos pertenecientes a un usuario específico.")
+    @ApiResponse(responseCode = "200", description = "Lista de productos obtenida exitosamente.")
+    @ApiResponse(responseCode = "401", description = "No autenticado.")
+    @ApiResponse(responseCode = "404", description = "No se encontró un usuario con el ID indicado.")
     @GetMapping("/user/{userId}")
     public List<ProductResponseDto> findByUserId(@PathVariable Long userId) {
         return service.findByUserId(userId);
@@ -127,6 +176,10 @@ public class ProductController {
     /*
      * GET /products/category/{categoryId}
      */
+    @Operation(summary = "Listar productos por categoría", description = "Devuelve la lista de productos pertenecientes a una categoría específica.")
+    @ApiResponse(responseCode = "200", description = "Lista de productos obtenida exitosamente.")
+    @ApiResponse(responseCode = "401", description = "No autenticado.")
+    @ApiResponse(responseCode = "404", description = "No se encontró una categoría con el ID indicado.")
     @GetMapping("/category/{categoryId}")
     public List<ProductResponseDto> findByCategoryId(@PathVariable Long categoryId) {
         return service.findByCategoryId(categoryId);

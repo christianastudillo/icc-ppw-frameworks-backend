@@ -6,22 +6,33 @@ import ec.edu.ups.icc.fundamentos01.users.dtos.UserResponseDto;
 import java.time.LocalDateTime;
 import java.util.Set;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Datos de un producto devueltos por la API")
 public class ProductResponseDto {
 
+    @Schema(description = "Identificador único del producto", example = "1")
     private Long id;
 
+    @Schema(description = "Nombre del producto", example = "Laptop Lenovo ThinkPad")
     private String name;
 
+    @Schema(description = "Precio del producto", example = "899.99")
     private Double price;
 
+    @Schema(description = "Cantidad disponible en inventario", example = "10")
     private Integer stock;
 
+    @Schema(description = "Usuario propietario del producto")
     private UserResponseDto owner;
 
+    @Schema(description = "Categorías asociadas al producto")
     private Set<CategoryResponseDto> categories;
 
+    @Schema(description = "Fecha y hora de creación del producto")
     private LocalDateTime createdAt;
 
+    @Schema(description = "Fecha y hora de la última actualización del producto")
     private LocalDateTime updatedAt;
 
     public ProductResponseDto() {
