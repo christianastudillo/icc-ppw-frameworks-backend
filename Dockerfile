@@ -1,29 +1,75 @@
-# ===== Etapa 1: Build =====
-FROM eclipse-temurin:25-jdk-jammy AS build
-WORKDIR /app
+# syntax=docker/dockerfile:1.7
 
-# Copiamos primero los archivos de configuración de Gradle para
-# aprovechar el cache de capas de Docker (dependencias no cambian tan seguido)
+# ============================================
+# ETAPA 1: BUILD
+# ============================================
+FROM eclipse-temurin:25-jdk-alpine AS builder
+
+WORKDIR /workspace/app
+
+# Copiar primero Gradle Wrapper y configuración
 COPY gradlew ./
 COPY gradle ./gradle
-COPY build.gradle settings.gradle ./
+COPY build.gradle.kts settings.gradle.kts ./
 
 RUN chmod +x gradlew
-RUN ./gradlew dependencies --no-daemon || return 0
 
-# Ahora copiamos el resto del código fuente
+# Copiar el código fuente
 COPY src ./src
 
-# Compilamos el proyecto (sin correr los tests para agilizar el build)
-RUN ./gradlew build -x test --no-daemon
+# Compilar usando caché persistente de BuildKit
+RUN --mount=type=cache,target=/root/.gradle \
+    ./gradlew bootJar -x test --no-daemon
 
-# ===== Etapa 2: Runtime =====
-FROM eclipse-temurin:25-jre-jammy
+# Extraer el JAR para separar dependencias y clases
+RUN mkdir -p build/dependency \
+    && cd build/dependency \
+    && jar -xf ../libs/app.jar
+
+
+# ============================================
+# ETAPA 2: RUNTIME
+# ============================================
+FROM eclipse-temurin:21-jre-alpine AS runtime
+
 WORKDIR /app
 
-# Copiamos únicamente el jar generado en la etapa de build
-COPY --from=build /app/build/libs/*.jar app.jar
+# curl se utiliza exclusivamente para el health check
+RUN apk add --no-cache curl \
+    && addgroup -S spring \
+    && adduser -S spring -G spring
+
+ARG DEPENDENCY=/workspace/app/build/dependency
+
+# Dependencias externas: cambian con menor frecuencia
+COPY --from=builder --chown=spring:spring \
+    ${DEPENDENCY}/BOOT-INF/lib /app/lib
+
+# Metadatos del JAR
+COPY --from=builder --chown=spring:spring \
+    ${DEPENDENCY}/META-INF /app/META-INF
+
+# Clases y recursos de la aplicación
+COPY --from=builder --chown=spring:spring \
+    ${DEPENDENCY}/BOOT-INF/classes /app
+
+USER spring:spring
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Configuración no sensible y reemplazable en runtime
+ENV TZ=America/Guayaquil
+
+HEALTHCHECK --interval=30s \
+    --timeout=5s \
+    --start-period=60s \
+    --retries=3 \
+    CMD curl --fail --silent --show-error \
+    http://localhost:8080/api/actuator/health || exit 1
+
+ENTRYPOINT ["java", \
+    "-Xms256m", \
+    "-Xmx512m", \
+    "-cp", \
+    "/app:/app/lib/*", \
+    "ec.edu.ups.icc.fundamentos01.Fundamentos01Application"]
