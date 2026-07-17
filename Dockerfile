@@ -3,61 +3,48 @@
 # ============================================
 # ETAPA 1: BUILD
 # ============================================
-FROM eclipse-temurin:25-jdk-alpine AS builder
+FROM eclipse-temurin:25-jdk-jammy AS builder
 
 WORKDIR /workspace/app
 
-# Copiar primero Gradle Wrapper y configuración
 COPY gradlew ./
 COPY gradle ./gradle
-COPY build.gradle.kts settings.gradle.kts ./
+COPY build.gradle settings.gradle ./
 
 RUN chmod +x gradlew
 
-# Copiar el código fuente
 COPY src ./src
 
-# Compilar usando caché persistente de BuildKit
 RUN --mount=type=cache,target=/root/.gradle \
     ./gradlew bootJar -x test --no-daemon
 
-# Extraer el JAR para separar dependencias y clases
 RUN mkdir -p build/dependency \
     && cd build/dependency \
     && jar -xf ../libs/app.jar
 
-
 # ============================================
 # ETAPA 2: RUNTIME
 # ============================================
-FROM eclipse-temurin:21-jre-alpine AS runtime
+FROM eclipse-temurin:25-jre-jammy AS runtime
 
 WORKDIR /app
 
-# curl se utiliza exclusivamente para el health check
-RUN apk add --no-cache curl \
-    && addgroup -S spring \
-    && adduser -S spring -G spring
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r spring \
+    && useradd -r -g spring spring
 
 ARG DEPENDENCY=/workspace/app/build/dependency
 
-# Dependencias externas: cambian con menor frecuencia
-COPY --from=builder --chown=spring:spring \
-    ${DEPENDENCY}/BOOT-INF/lib /app/lib
-
-# Metadatos del JAR
-COPY --from=builder --chown=spring:spring \
-    ${DEPENDENCY}/META-INF /app/META-INF
-
-# Clases y recursos de la aplicación
-COPY --from=builder --chown=spring:spring \
-    ${DEPENDENCY}/BOOT-INF/classes /app
+COPY --from=builder --chown=spring:spring ${DEPENDENCY}/BOOT-INF/lib /app/lib
+COPY --from=builder --chown=spring:spring ${DEPENDENCY}/META-INF /app/META-INF
+COPY --from=builder --chown=spring:spring ${DEPENDENCY}/BOOT-INF/classes /app
 
 USER spring:spring
 
 EXPOSE 8080
 
-# Configuración no sensible y reemplazable en runtime
 ENV TZ=America/Guayaquil
 
 HEALTHCHECK --interval=30s \
